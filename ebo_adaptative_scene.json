@@ -1,0 +1,465 @@
+{
+    "DSRModel": {
+        "symbols": {
+            "100": {
+                "attribute": {
+                    "color": {
+                        "type": 0,
+                        "value": "SeaGreen"
+                    },
+                    "level": {
+                        "type": 1,
+                        "value": 0
+                    },
+                    "pos_x": {
+                        "type": 2,
+                        "value": -469.616608
+                    },
+                    "pos_y": {
+                        "type": 2,
+                        "value": -263.481293
+                    }
+                },
+                "id": "100",
+                "links": [
+                    {
+                        "dst": "200",
+                        "label": "RT",
+                        "linkAttribute": {
+                            "rt_rotation_euler_xyz": {
+                                "type": 3,
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ]
+                            },
+                            "rt_translation": {
+                                "type": 3,
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ]
+                            }
+                        },
+                        "src": "100"
+                    },
+                    {
+                        "dst": "180513889253851137",
+                        "label": "has",
+                        "linkAttribute": {
+                        },
+                        "src": "100"
+                    }
+                ],
+                "name": "root",
+                "type": "root"
+            },
+            "180513889253851137": {
+                "attribute": {
+                    "agent_description": {
+                        "type": 0,
+                        "value": "TODO"
+                    },
+                    "agent_id": {
+                        "type": 6,
+                        "value": 1
+                    },
+                    "agent_name": {
+                        "type": 0,
+                        "value": "Participant_1 ( idserver )"
+                    },
+                    "cpu_usage": {
+                        "type": 2,
+                        "value": 18
+                    },
+                    "memory_usage": {
+                        "type": 6,
+                        "value": 185796
+                    },
+                    "num_procs": {
+                        "type": 6,
+                        "value": 33
+                    },
+                    "parent": {
+                        "type": 7,
+                        "value": "100"
+                    },
+                    "pos_x": {
+                        "type": 2,
+                        "value": -472.452881
+                    },
+                    "pos_y": {
+                        "type": 2,
+                        "value": -357.401825
+                    },
+                    "timestamp_agent": {
+                        "type": 7,
+                        "value": "1739969385813071615"
+                    },
+                    "timestamp_alivetime": {
+                        "type": 7,
+                        "value": "1739969385"
+                    },
+                    "timestamp_creation": {
+                        "type": 7,
+                        "value": "1717053862462914697"
+                    }
+                },
+                "id": "180513889253851137",
+                "links": [
+                ],
+                "name": "Participant_1 ( idserver )",
+                "type": "agent"
+            },
+            "200": {
+                "attribute": {
+                    "base_target_x": {
+                        "type": 2,
+                        "value": 3600
+                    },
+                    "base_target_y": {
+                        "type": 2,
+                        "value": 1550
+                    },
+                    "color": {
+                        "type": 0,
+                        "value": "Blue"
+                    },
+                    "level": {
+                        "type": 1,
+                        "value": 1
+                    },
+                    "parent": {
+                        "type": 7,
+                        "value": "100"
+                    },
+                    "port": {
+                        "type": 1,
+                        "value": 12238
+                    },
+                    "pos_x": {
+                        "type": 2,
+                        "value": -469.812988
+                    },
+                    "pos_y": {
+                        "type": 2,
+                        "value": -145.327774
+                    },
+                    "robot_ref_adv_speed": {
+                        "type": 2,
+                        "value": 0
+                    },
+                    "robot_ref_rot_speed": {
+                        "type": 2,
+                        "value": 0
+                    },
+                    "robot_ref_side_speed": {
+                        "type": 2,
+                        "value": 0
+                    }
+                },
+                "id": "200",
+                "links": [
+                    {
+                        "dst": "218959106864603346",
+                        "label": "has",
+                        "linkAttribute": {
+                        },
+                        "src": "200"
+                    }
+                ],
+                "name": "EBO",
+                "type": "omnirobot"
+            },
+            "218959106864578770": {
+                "attribute": {
+                    "aficiones": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "edad": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "familiares": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "nombre": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "pos_x": {
+                        "type": 2,
+                        "value": 198.538788
+                    },
+                    "pos_y": {
+                        "type": 2,
+                        "value": -146.846542
+                    },
+                    "pp_ra": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "pp_rc": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "pp_sv": {
+                        "type": 4,
+                        "value": false
+                    },
+                    "ss_aa": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "ss_au": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "ss_da": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "ss_du": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "ss_fa": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "ss_fu": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "ss_ra": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "ss_ru": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "ss_tu": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "st_jc": {
+                        "type": 0,
+                        "value": ""
+                    }
+                },
+                "id": "218959106864578770",
+                "links": [
+                ],
+                "name": "CSV Manager",
+                "type": "tts"
+            },
+            "218959106864582866": {
+                "attribute": {
+                    "pos_x": {
+                        "type": 2,
+                        "value": -266.533447
+                    },
+                    "pos_y": {
+                        "type": 2,
+                        "value": -272.936249
+                    }
+                },
+                "id": "218959106864582866",
+                "links": [
+                ],
+                "name": "Realtime Adapter",
+                "type": "tts"
+            },
+            "218959106864586962": {
+                "attribute": {
+                    "pos_x": {
+                        "type": 2,
+                        "value": -267.411987
+                    },
+                    "pos_y": {
+                        "type": 2,
+                        "value": -40.075439
+                    }
+                },
+                "id": "218959106864586962",
+                "links": [
+                ],
+                "name": "Settings Adapter",
+                "type": "tts"
+            },
+            "218959106864591058": {
+                "attribute": {
+                    "actual_game": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "pos_x": {
+                        "type": 2,
+                        "value": -18.204245
+                    },
+                    "pos_y": {
+                        "type": 2,
+                        "value": -74.536819
+                    }
+                },
+                "id": "218959106864591058",
+                "links": [
+                    {
+                        "dst": "218959106864578770",
+                        "label": "has",
+                        "linkAttribute": {
+                        },
+                        "src": "218959106864591058"
+                    }
+                ],
+                "name": "Storytelling",
+                "type": "tts"
+            },
+            "218959106864595154": {
+                "attribute": {
+                    "aciertos": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "dificultad": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "fallos": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "nombre": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "pos_x": {
+                        "type": 2,
+                        "value": -22.964024
+                    },
+                    "pos_y": {
+                        "type": 2,
+                        "value": -223.024872
+                    },
+                    "rondas": {
+                        "type": 0,
+                        "value": ""
+                    }
+                },
+                "id": "218959106864595154",
+                "links": [
+                    {
+                        "dst": "218959106864578770",
+                        "label": "has",
+                        "linkAttribute": {
+                        },
+                        "src": "218959106864595154"
+                    }
+                ],
+                "name": "Simon Say",
+                "type": "tts"
+            },
+            "218959106864599250": {
+                "attribute": {
+                    "nombre": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "pos_x": {
+                        "type": 2,
+                        "value": -22.738035
+                    },
+                    "pos_y": {
+                        "type": 2,
+                        "value": -147.932098
+                    },
+                    "racha": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "rosco": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "segunda_vuelta": {
+                        "type": 4,
+                        "value": false
+                    }
+                },
+                "id": "218959106864599250",
+                "links": [
+                    {
+                        "dst": "218959106864578770",
+                        "label": "has",
+                        "linkAttribute": {
+                        },
+                        "src": "218959106864599250"
+                    }
+                ],
+                "name": "Pasapalabra",
+                "type": "tts"
+            },
+            "218959106864603346": {
+                "attribute": {
+                    "actual_game": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "pos_x": {
+                        "type": 2,
+                        "value": -267.419189
+                    },
+                    "pos_y": {
+                        "type": 2,
+                        "value": -151.365875
+                    }
+                },
+                "id": "218959106864603346",
+                "links": [
+                    {
+                        "dst": "218959106864582866",
+                        "label": "has",
+                        "linkAttribute": {
+                        },
+                        "src": "218959106864603346"
+                    },
+                    {
+                        "dst": "218959106864586962",
+                        "label": "has",
+                        "linkAttribute": {
+                        },
+                        "src": "218959106864603346"
+                    },
+                    {
+                        "dst": "218959106864591058",
+                        "label": "has",
+                        "linkAttribute": {
+                        },
+                        "src": "218959106864603346"
+                    },
+                    {
+                        "dst": "218959106864595154",
+                        "label": "has",
+                        "linkAttribute": {
+                        },
+                        "src": "218959106864603346"
+                    },
+                    {
+                        "dst": "218959106864599250",
+                        "label": "has",
+                        "linkAttribute": {
+                        },
+                        "src": "218959106864603346"
+                    }
+                ],
+                "name": "Actual Game",
+                "type": "tts"
+            }
+        }
+    }
+}
