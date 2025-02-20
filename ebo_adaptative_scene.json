@@ -199,7 +199,7 @@
                         "type": 2,
                         "value": -146.846542
                     },
-                    "pp_ra": {
+                    "pp_nota": {
                         "type": 0,
                         "value": ""
                     },
@@ -247,9 +247,17 @@
                         "type": 0,
                         "value": ""
                     },
+                    "ss_nota": {
+                        "type": 0,
+                        "value": ""
+                    },
                     "st_jc": {
                         "type": 0,
                         "value": ""
+                    },
+                    "actualizar_info": {
+                        "type": 4,
+                        "value": false
                     }
                 },
                 "id": "218959106864578770",

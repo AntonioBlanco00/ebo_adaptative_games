@@ -1,0 +1,19 @@
+# Endpoints for implements interfaces
+StoryTelling.Endpoints=tcp -p 13700
+
+
+# Proxies for required interfaces
+GPTProxy = gpt:tcp -h localhost -p 13788
+GestorSGProxy = gestorsg:tcp -h localhost -p 16826
+
+
+
+
+
+Ice.Warn.Connections=0
+Ice.Trace.Network=0
+Ice.Trace.Protocol=0
+Ice.MessageSizeMax=20004800
+
+
+

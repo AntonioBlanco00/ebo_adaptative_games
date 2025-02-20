@@ -1,0 +1,5 @@
+module RoboCompStoryTelling{
+	interface StoryTelling{
+		void StartGame();
+  };
+};

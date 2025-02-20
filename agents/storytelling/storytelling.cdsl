@@ -1,0 +1,16 @@
+import "GPT.idsl";
+import "StoryTelling.idsl";
+import "GestorSG.idsl";
+
+Component storytelling
+{
+    Communications
+    {
+        implements StoryTelling;
+        requires GPT, GestorSG;
+    };
+    language python;
+    gui Qt(QWidget);
+    options dsr;
+};
+

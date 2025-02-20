@@ -1,0 +1,20 @@
+# Endpoints for implements interfaces
+GestorSG.Endpoints=tcp -p 10788
+
+
+# Proxies for required interfaces
+JuegoSimonSayProxy = juegosimonsay:tcp -h localhost -p 12042
+PasapalabraProxy = pasapalabra:tcp -h localhost -p 18207
+StoryTellingProxy = storytelling:tcp -h localhost -p 16077
+
+
+
+
+
+Ice.Warn.Connections=0
+Ice.Trace.Network=0
+Ice.Trace.Protocol=0
+Ice.MessageSizeMax=20004800
+
+
+
