@@ -1,0 +1,9 @@
+Component csv_manager
+{
+    Communications
+    {
+    };
+    language python;
+    options dsr;
+};
+
