@@ -37,6 +37,7 @@ from datetime import datetime
 import os
 import sys
 import threading
+import re
 
 # If RoboComp was compiled with Python bindings you can use InnerModel in Python
 # import librobocomp_qmat
@@ -79,8 +80,10 @@ class SpecificWorker(GenericWorker):
         self.NUM_LEDS = 52
         self.effect_event = threading.Event()
         self.effect_thread = None  # Variable para almacenar el hilo del efecto
-        # speech_test = "Esto es un mensaje de prueba del Speech"
-        # self.speech_proxy.say("¿Hola? Estoy probando si ya dejo de decir signo de interrogación. ¿Funciona? ¿Sì? ¿No? ¡Viva el cacereño!", False)
+
+        print(" INICIANDO PRUEBA EXIT MODE ")
+        self.exit_mode()
+        print(" TERMINANDO PRUEBA EXIT MODE ")
 
     def __del__(self):
         """Destructor"""
@@ -375,11 +378,63 @@ class SpecificWorker(GenericWorker):
         return run_id
 
 
+    def actualizar_dsr(self, aficiones, familiares):
+        node = self.g.get_node("CSV Manager")
+        node.attrs["familiares"].value = familiares
+        node.attrs["aficiones"].value = aficiones
+        self.g.update_node(node)
+        print("DSR Actualizado con los valores de aficiones y familiares")
+
+    def actualizar_dsr2(self, juego):
+        node = self.g.get_node("CSV Manager")
+        actual = node.attrs["st_jc"].value
+        node.attrs["st_jc"].value = f"{actual}, {juego}"
+        self.g.update_node(node)
+        print("DSR Actualizado con los juegos completados")
+
+    def exit_mode(self):
+        node = self.g.get_node("Storytelling")
+        game = node.attrs["actual_game"].value
+
+        if game == "Conversation":
+            message = """La conversación ha terminado. Actualiza los datos iniciales del usuario proporcionados según la conversación. Devuelvemelo en formato:
+            Aficiones: (texto).
+            Familiares: (texto)"""
+            run_id = self.send_message_to_assistant(self.client, self.thread_id, self.assistant_id, message)
+            response = self.get_assistant_response(self.client, self.thread_id, run_id)
+
+            aficiones_pattern = r"Aficiones:\s*(.*)"
+            familiares_pattern = r"Familiares:\s*(.*)"
+
+            aficiones_match = re.search(aficiones_pattern, response)
+            familiares_match = re.search(familiares_pattern, response)
+
+            aficiones = aficiones_match.group(1) if aficiones_match else ""
+            familiares = familiares_match.group(1) if familiares_match else ""
+
+            self.actualizar_dsr(aficiones, familiares)
+
+
+        else:
+            self.actualizar_dsr2(game)
+
+        node.attrs["actual_game"].value = ""
+        self.g.update_node(node)
+
+
     def exit_program(self):
+        self.exit_mode()
+        time.sleep(0.5)
         print("-------------------- El programa ha terminado --------------------")
         self.delete_thread(thread_id=self.thread_id)
         print("-------------------- Hilo borrado --------------------")
         self.conversacion_en_curso = False
+        self.actualizar_csv()
+
+    def actualizar_csv(self):
+        node = self.g.get_node("CSV Manager")
+        node.attrs["actualizar_info"].value = True
+        self.g.update_node(node)
 
     def delete_thread(self, thread_id):
         self.client.beta.threads.delete(thread_id)

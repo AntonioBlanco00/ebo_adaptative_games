@@ -1,0 +1,9 @@
+Component settings_adapter
+{
+    Communications
+    {
+    };
+    language python;
+    options dsr;
+};
+

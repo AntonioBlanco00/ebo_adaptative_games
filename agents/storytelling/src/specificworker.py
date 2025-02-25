@@ -28,6 +28,8 @@ import interfaces as ifaces
 import time
 import os
 import json
+import csv
+import random
 
 from PySide6.QtCore import Signal, Slot
 
@@ -72,6 +74,7 @@ class SpecificWorker(GenericWorker):
 
         self.flag_test = True
         print("COMPONENTE STORYTELLING INICIADO")
+        self.archivo_csv = "../../users_info.csv"
 
         self.ui = self.game_selector_ui()
         self.ui2 = self.conversational_ui()
@@ -85,6 +88,8 @@ class SpecificWorker(GenericWorker):
         self.familiares = ""
 
         self.personalidad = ""
+
+        self.st_jc = ""
 
         self.update_ui_signal.connect(self.on_update_ui)
 
@@ -113,6 +118,7 @@ class SpecificWorker(GenericWorker):
         self.familiares = ""
 
         self.personalidad = ""
+        self.st_jc = ""
         
     ################ FUNCIONES RELACIONADAS CON LA INTERFAZ GRÁFICA ################
 
@@ -175,10 +181,13 @@ class SpecificWorker(GenericWorker):
 
         # Conectar botones a funciones
         ui.startGame.clicked.connect(self.startGame_clicked_conv)
+        ui.startGame_user.clicked.connect(self.startGame_user_clicked_conv)
 
         # Añadir opciones al ComboBox
         opciones = ["Seleccionar Personalidad...", "EBO_simpatico", "EBO_neutro", "EBO_pasional"]
         ui.comboBox.addItems(opciones)
+
+        self.cargarUsuarios(ui, self.archivo_csv)
         
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
@@ -188,6 +197,19 @@ class SpecificWorker(GenericWorker):
         ui.installEventFilter(self) 
 
         return ui
+
+    def cargarUsuarios(self, ui, archivo_csv):
+        opciones = ["Seleccionar usuario..."]
+        try:
+            with open(archivo_csv, newline='', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile, delimiter=';')
+                for row in reader:
+                    nombre = row['nombre'].strip()
+                    residencia = row['residencia'].strip() if row['residencia'].strip() else "Desconocida"
+                    opciones.append(f"{nombre} - {residencia}")
+        except Exception as e:
+            print(f"Error al leer el CSV: {e}")
+        ui.comboBox_user.addItems(opciones)
 
     def startGame_clicked_conv(self):
         self.setDatos()
@@ -203,6 +225,25 @@ class SpecificWorker(GenericWorker):
         # self.ui2.startGame.setEnabled(False)
 
         print("Iniciando juego con los datos seleccionados")
+        self.story_selected_dsr("Conversation")
+        self.cerrar_ui(2)
+        # SET GAME INFO
+        self.gpt_proxy.setGameInfo(self.personalidad, self.user_info)
+        self.lanzar_ui4()
+        self.ui4.text_info.setText("EBO comenzará a hablar en breve")
+        # START CHAT
+        self.gpt_proxy.startChat()
+        self.ui4.text_info.setText("Introduzca respuesta")
+
+    def startGame_user_clicked_conv(self):
+        self.select_user()
+        self.leerDatos()
+        self.personalidad = self.ui2.comboBox.currentText()
+        if not self.personalidad or self.personalidad == "Seleccionar Personalidad...":
+            print("Por favor selecciona una personalidad.")
+            return
+        print("Iniciando juego con los datos leídos")
+        self.story_selected_dsr("Conversation")
         self.cerrar_ui(2)
         # SET GAME INFO
         self.gpt_proxy.setGameInfo(self.personalidad, self.user_info)
@@ -229,9 +270,46 @@ class SpecificWorker(GenericWorker):
         print(self.user_info)
         print("-------------------------------------------------------------------")
 
+    def leerDatos(self):
+        self.actualizar_datos()
+        time.sleep(0.5)
+        node = self.g.get_node("CSV Manager")
+        self.nombre_jugador = node.attrs["nombre"].value
+        self.aficiones = node.attrs["aficiones"].value
+        self.edad = node.attrs["edad"].value
+        self.familiares = node.attrs["familiares"].value
 
+        self.user_info = (f"Los datos del usuario con el que vas a hablar son los siguientes. "
+                          f"Nombre: {self.nombre_jugador}. "
+                          f"Edad: {self.edad}. "
+                          f"Aficiones: {self.aficiones}. "
+                          f"Familiares: {self.familiares}. "
+                          f"Presentate, saludale e inicia la conversación adaptandote a sus aficiones. Más adelante puedes preguntarle por sus aficiones"
+                          )
+        print("-------------------------------------------------------------------")
+        print(self.user_info)
+        print("-------------------------------------------------------------------")
 
-    #### UI 3 #### ################ ############################################### ################
+    def select_user(self):
+        print("Usuario seleccionado")
+        nombre = self.ui2.comboBox_user.currentText()
+
+        if not nombre or nombre == "Seleccionar usuario...":
+            print("Por favor selecciona un usuario.")
+            return
+
+        self.nombre_jugador = nombre.split(" - ")[0].strip()
+        node = self.g.get_node("CSV Manager")
+        node.attrs["nombre"].value = self.nombre_jugador
+        self.g.update_node(node)
+
+    def actualizar_datos(self):
+        node = self.g.get_node("Settings Adapter")
+        node.attrs["set_info"].value = True
+        self.g.update_node(node)
+
+        #### UI 3 #### ################ ############################################### ################
+
     def storytelling_ui (self):
         #Carga la interfaz desde el archivo .ui
         loader = QtUiTools.QUiLoader()
@@ -242,7 +320,10 @@ class SpecificWorker(GenericWorker):
 
         # Conectar botones a funciones
         ui.startGame.clicked.connect(self.startGame_clicked)
+        ui.startGame_user.clicked.connect(self.startGame_user_clicked)
         self.configure_combobox(ui, "../juegos_story")
+
+        self.cargarUsuarios(ui, self.archivo_csv)
         
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
@@ -317,6 +398,7 @@ class SpecificWorker(GenericWorker):
         self.ui3.famiE.clear()
 
         print("Iniciando juego con los datos seleccionados")
+        self.story_selected_dsr(juego)
         self.cerrar_ui(3)
         # SET GAME INFO
         self.gpt_proxy.setGameInfo("StoryTelling", self.user_info)
@@ -334,6 +416,78 @@ class SpecificWorker(GenericWorker):
 
         self.ui3.startGame.setEnabled(True)
 
+    #### ################ ############################################### ################
+
+    def startGame_user_clicked(self):
+        self.select_user_st()
+        self.leerDatos_st()
+        juego = self.select_random_game()
+
+        folder_path = "../juegos_story"
+        archivo_json = f"{juego}.json"
+        self.archivo_path = os.path.join(folder_path, archivo_json)
+
+        self.user_info = self.archivo_json_a_string(self.archivo_path)
+
+        print("------------ JSON ENVIADO ---------------------------------")
+        print(self.user_info)
+        print("------------ JSON ENVIADO ---------------------------------")
+
+        print("Iniciando juego con los datos seleccionados")
+        self.story_selected_dsr(juego)
+        self.cerrar_ui(3)
+        # SET GAME INFO
+        self.gpt_proxy.setGameInfo("StoryTelling", self.user_info)
+        self.lanzar_ui4()
+        self.ui4.text_info.setText("EBO comenzará a hablar en breve")
+        # START CHAT
+        self.gpt_proxy.startChat()
+        self.ui4.text_info.setText("Introduzca respuesta")
+
+    def select_user_st(self):
+        print("Usuario seleccionado")
+        nombre = self.ui3.comboBox_user.currentText()
+
+        if not nombre or nombre == "Seleccionar usuario...":
+            print("Por favor selecciona un usuario.")
+            return
+
+        self.nombre_jugador = nombre.split(" - ")[0].strip()
+        node = self.g.get_node("CSV Manager")
+        node.attrs["nombre"].value = self.nombre_jugador
+        self.g.update_node(node)
+
+    def leerDatos_st(self):
+        self.actualizar_datos()
+        time.sleep(0.5)
+        node = self.g.get_node("CSV Manager")
+
+        self.nombre_jugador = node.attrs["nombre"].value
+        self.aficiones = node.attrs["aficiones"].value
+        self.edad = node.attrs["edad"].value
+        self.familiares = node.attrs["familiares"].value
+        self.st_jc = node.attrs["st_jc"].value
+        pass
+
+    def select_random_game(self):
+        jc = [j.strip().lower() for j in self.st_jc.split(",")]
+        print(f"JUEGOS COMPLETADOS: {jc}")
+        carpeta_juegos = "../juegos_story"
+
+        juegos_en_carpeta = [
+            os.path.splitext(f)[0].strip().lower()
+            for f in os.listdir(carpeta_juegos)
+            if os.path.isfile(os.path.join(carpeta_juegos, f))
+        ]
+        juegos_disponibles = [j for j in juegos_en_carpeta if j not in jc]
+
+        print(f"JUEGOS DISPONIBLES {juegos_disponibles}")
+
+        juego_seleccionado = random.choice(juegos_disponibles) if juegos_disponibles else None
+
+        print("Juego seleccionado:", juego_seleccionado)
+
+        return juego_seleccionado
 
 
     #### UI 4 #### ################ ############################################### ################
@@ -350,6 +504,7 @@ class SpecificWorker(GenericWorker):
         ui.salir.clicked.connect(self.salir_clicked)
         
         ui.respuesta.installEventFilter(self)
+
         
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
@@ -442,12 +597,24 @@ class SpecificWorker(GenericWorker):
 
     ####################################################################################################################################
 
+    def game_selected_dsr(self, game):
+        node = self.g.get_node("Actual Game")
+        node.attrs["actual_game"].value = game
+        self.g.update_node(node)
+
+    def story_selected_dsr(self, game):
+        node = self.g.get_node("Storytelling")
+        node.attrs["actual_game"].value = game
+        self.g.update_node(node)
+
     def lanzar_ui2(self):
+        self.game_selected_dsr("Conversation")
         self.centrar_ventana(self.ui2)
         self.ui2.show()
         QApplication.processEvents()
 
     def lanzar_ui3(self):
+        self.game_selected_dsr("Storytelling")
         self.centrar_ventana(self.ui3)
         self.ui3.show()
         QApplication.processEvents()

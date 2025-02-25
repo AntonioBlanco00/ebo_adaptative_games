@@ -52,12 +52,12 @@ class SpecificWorker(GenericWorker):
 
         try:
             signals.connect(self.g, signals.UPDATE_NODE_ATTR, self.update_node_att)
-            signals.connect(self.g, signals.UPDATE_NODE, self.update_node)
-            signals.connect(self.g, signals.DELETE_NODE, self.delete_node)
-            signals.connect(self.g, signals.UPDATE_EDGE, self.update_edge)
-            signals.connect(self.g, signals.UPDATE_EDGE_ATTR, self.update_edge_att)
-            signals.connect(self.g, signals.DELETE_EDGE, self.delete_edge)
-            console.print("signals connected")
+            # signals.connect(self.g, signals.UPDATE_NODE, self.update_node)
+            # signals.connect(self.g, signals.DELETE_NODE, self.delete_node)
+            # signals.connect(self.g, signals.UPDATE_EDGE, self.update_edge)
+            # signals.connect(self.g, signals.UPDATE_EDGE_ATTR, self.update_edge_att)
+            # signals.connect(self.g, signals.DELETE_EDGE, self.delete_edge)
+            # console.print("signals connected")
         except RuntimeError as e:
             print(e)
 
@@ -154,6 +154,7 @@ class SpecificWorker(GenericWorker):
 
 
     def simon_clicked(self):
+        self.game_selected_dsr("Simon Say")
         self.ui.removeEventFilter(self)
         self.ui.close()
         self.ui.installEventFilter(self)
@@ -164,6 +165,7 @@ class SpecificWorker(GenericWorker):
 
 
     def pasapalabra_clicked(self):
+        self.game_selected_dsr("Pasapalabra")
         self.ui.removeEventFilter(self)
         self.ui.close()
         self.ui.installEventFilter(self)
@@ -202,6 +204,14 @@ class SpecificWorker(GenericWorker):
 
     ####################################################################################################################################
 
+
+    def game_selected_dsr(self, game):
+        node = self.g.get_node("Actual Game")
+        node.attrs["actual_game"].value = game
+        self.g.update_node(node)
+
+
+
     # =============== Methods for Component Implements ==================
     # ===================================================================
 
@@ -209,6 +219,7 @@ class SpecificWorker(GenericWorker):
     # IMPLEMENTATION of LanzarApp method from GestorSG interface
     #
     def GestorSG_LanzarApp(self):
+        self.game_selected_dsr("")
         self.juego_seleccionado = False
         self.centrar_ventana(self.ui)
         self.ui.show()
@@ -252,7 +263,8 @@ class SpecificWorker(GenericWorker):
     # =============================================
 
     def update_node_att(self, id: int, attribute_names: [str]):
-        console.print(f"UPDATE NODE ATT: {id} {attribute_names}", style='green')
+        # console.print(f"UPDATE NODE ATT: {id} {attribute_names}", style='green')
+        pass
 
     def update_node(self, id: int, type: str):
         console.print(f"UPDATE NODE: {id} {type}", style='green')
