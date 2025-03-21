@@ -255,6 +255,10 @@
                         "type": 0,
                         "value": ""
                     },
+                    "num_partidas": {
+                        "type": 0,
+                        "value": ""
+                    },
                     "actualizar_info": {
                         "type": 4,
                         "value": false
@@ -359,6 +363,34 @@
                         "value": -223.024872
                     },
                     "rondas": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "v_on": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "v_off": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "feedback": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "racha": {
+                        "type": 0,
+                        "value": ""
+                    },
+                   "num_partidas": {
+                        "type": 0,
+                        "value": ""
+                    },
+       		   "t_medio": {
+                        "type": 0,
+                        "value": ""
+                    },
+                    "nota": {
                         "type": 0,
                         "value": ""
                     }

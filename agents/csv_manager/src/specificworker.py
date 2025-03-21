@@ -67,7 +67,7 @@ class SpecificWorker(GenericWorker):
 
         self.archivo_csv = "../../users_info.csv"
 
-        self.atributos_a_verificar = ["nombre", "edad", "aficiones", "familiares", "st_jc", "pp_rc", "pp_nota", "ss_ru", "ss_du", "ss_au", "ss_fu", "ss_tu", "ss_nota"]
+        self.atributos_a_verificar = ["nombre", "edad", "aficiones", "familiares", "st_jc", "pp_rc", "pp_nota", "ss_ru", "ss_du", "ss_au", "ss_fu", "ss_tu", "ss_nota", "num_partidas"]
 
 
     def recoger_info(self):
@@ -88,7 +88,8 @@ class SpecificWorker(GenericWorker):
             'aciertos_ult': '',
             'fallos_ult': '',
             't_ult': '',
-            'nota_sim': ''
+            'nota_sim': '',
+            'num_partidas': ''
         }
 
         # Diccionario de mapeo para renombrar atributos

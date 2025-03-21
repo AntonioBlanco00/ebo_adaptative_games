@@ -77,13 +77,10 @@ class SpecificWorker(GenericWorker):
         self.conversacion_en_curso = False
         self.asisstantName  = ""
         self.userInfo = ""
-        self.NUM_LEDS = 52
+        self.NUM_LEDS = 54
         self.effect_event = threading.Event()
         self.effect_thread = None  # Variable para almacenar el hilo del efecto
 
-        print(" INICIANDO PRUEBA EXIT MODE ")
-        self.exit_mode()
-        print(" TERMINANDO PRUEBA EXIT MODE ")
 
     def __del__(self):
         """Destructor"""

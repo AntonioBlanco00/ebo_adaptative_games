@@ -1,0 +1,20 @@
+import "LEDArray.idsl";
+import "CameraSimple.idsl";
+import "EmotionalMotor.idsl";
+import "Speech.idsl";
+import "JuegoSimonSay.idsl";
+import "GestorSG.idsl";
+
+Component simonSay
+{
+    Communications
+    {
+        implements JuegoSimonSay;
+        requires LEDArray, CameraSimple, EmotionalMotor, Speech, GestorSG;
+       
+    };
+    language python;
+    gui Qt(QWidget);
+    options dsr;
+};
+

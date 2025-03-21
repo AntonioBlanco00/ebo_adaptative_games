@@ -1,0 +1,22 @@
+# Endpoints for implements interfaces
+JuegoSimonSay.Endpoints=tcp -p 17668
+
+
+# Proxies for required interfaces
+CameraSimpleProxy = camerasimple:tcp -h localhost -p 16511
+EmotionalMotorProxy = emotionalmotor:tcp -h localhost -p 11477
+GestorSGProxy = gestorsg:tcp -h localhost -p 14276
+LEDArrayProxy = ledarray:tcp -h localhost -p 10555
+SpeechProxy = speech:tcp -h localhost -p 17085
+
+
+
+
+
+Ice.Warn.Connections=0
+Ice.Trace.Network=0
+Ice.Trace.Protocol=0
+Ice.MessageSizeMax=20004800
+
+
+

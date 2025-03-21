@@ -3,7 +3,7 @@ GestorSG.Endpoints=tcp -p 16299
 
 
 # Proxies for required interfaces
-JuegoSimonSayProxy = juegosimonsay:tcp -h localhost -p 15490
+JuegoSimonSayProxy = juegosimonsay:tcp -h localhost -p 15495
 PasapalabraProxy = pasapalabra:tcp -h localhost -p 18743
 StoryTellingProxy = storytelling:tcp -h localhost -p 16758
 

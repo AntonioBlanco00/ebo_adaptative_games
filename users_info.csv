@@ -1,3 +1,8 @@
-nombre;residencia;edad;aficiones;familiares;story_completados;roscos_completados;nota_psp;rondas_ult;intentos_ult;dificultad_ult;aciertos_ult;fallos_ult;t_ult;nota_sim;ss_du;ss_nota
-Amelio;;24;Futbol;Hijo Enrique;escribir_carta, leer_libro;;;;;;;;;;;
-Adela;robolab;23;;;;;;;;;;;;;;
+nombre;residencia;edad;aficiones;familiares;story_completados;roscos_completados;nota_psp;rondas_ult;intentos_ult;ss_du;aciertos_ult;fallos_ult;t_ult;nota_sim;num_partidas;dificultad_ult
+Amelio;;45.0;Tenis.;Hijo Enrique.;escribir_carta, leer_libro, preparar_cafe;;;7.0;2.0;Difícil;0.0;2.0;21.02;851.0;4.0;Intermedio bajo
+Adela;robolab;23.0;;;;;;;;;;;;;;
+Antonio Mitad;;;;;;;;5.0;;;5.0;1.0;2.85;969.0;6.0;Intermedio bajo
+Alicia;;;;;;;;10.0;;;4.0;3.0;5.04;1451.0;7.0;Difícil
+Nachota;;;;;;;;8.0;;;3.0;2.0;6.28;1403.0;13.0;Intermedio alto
+Enrique;;;;;;;;14.0;;;5.0;4.0;3.93;1632.0;10.0;Difícil
+TEEST;;;;;;;;3;;;0;2;25.75;221;2;Muy fácil

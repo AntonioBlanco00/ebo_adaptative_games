@@ -204,7 +204,6 @@ class SpecificWorker(GenericWorker):
 
     ####################################################################################################################################
 
-
     def game_selected_dsr(self, game):
         node = self.g.get_node("Actual Game")
         node.attrs["actual_game"].value = game

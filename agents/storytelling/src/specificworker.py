@@ -567,6 +567,7 @@ class SpecificWorker(GenericWorker):
                 if respuesta == QMessageBox.Yes:
                     print(f"Ventana {ui_number} cerrada por el usuario.")
                     self.reiniciar_variables()
+                    self.vaciar_csv_manager()
                     self.gestorsg_proxy.LanzarApp()
                     return False  # Permitir el cierre
                 else:
@@ -596,6 +597,20 @@ class SpecificWorker(GenericWorker):
 
 
     ####################################################################################################################################
+
+    def vaciar_csv_manager(self):
+        node = self.g.get_node("CSV Manager")
+        atributos_ignore = ["ID", "name", "pos_x", "pos_y", "pp_sv", "actualizar_info"]
+
+        node.attrs["actualizar_info"].value = False
+        node.attrs["pp_sv"].value = False
+
+        for atributo in node.attrs:
+            if atributo in atributos_ignore:
+                pass
+            else:
+                node.attrs[atributo].value = ""
+        self.g.update_node(node)
 
     def game_selected_dsr(self, game):
         node = self.g.get_node("Actual Game")

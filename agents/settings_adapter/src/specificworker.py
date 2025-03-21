@@ -81,9 +81,10 @@ class SpecificWorker(GenericWorker):
         self.aciertos_ult = None
         self.fallos_ult = None
         self.t_ult = None
-        self.nota_sim = None
+        self.nota_sim = 1000
         self.ss_du = None
-        self.ss_nota = None
+        self.ss_nota = 1000
+        self.num_partidas = None
 
     def __del__(self):
         """Destructor"""
@@ -99,7 +100,7 @@ class SpecificWorker(GenericWorker):
 
     @QtCore.Slot()
     def compute(self):
-
+        print("a")
         return True
 
     def startup_check(self):
@@ -146,8 +147,8 @@ class SpecificWorker(GenericWorker):
                 self.nota_sim = resultado['nota_sim'].iloc[0]
             if pd.notna(resultado['ss_du'].iloc[0]):
                 self.ss_du = resultado['ss_du'].iloc[0]
-            if pd.notna(resultado['ss_nota'].iloc[0]):
-                self.ss_nota = resultado['ss_nota'].iloc[0]
+            if pd.notna(resultado['num_partidas'].iloc[0]):
+                self.num_partidas = resultado['num_partidas'].iloc[0]
 
         else:
             print("No se encontraron datos para los criterios proporcionados.")
@@ -169,6 +170,7 @@ class SpecificWorker(GenericWorker):
 
         elif game == "Simon Say":
             print("Cargando info para Simon Say")
+            self.update_simonsay()
 
         elif game == "Pasapalabra":
             print("Cargando info para Pasapalabra")
@@ -192,6 +194,113 @@ class SpecificWorker(GenericWorker):
         self.vaciar_variables()
         self.g.update_node(node)
 
+    def update_simonsay(self):
+        # Aqui se determinan rondas y nota(tiempos) que se van a usar.
+        node = self.g.get_node("Simon Say")
+        nota = self.nota_sim
+        print("-------------------------")
+        print(nota)
+        print("--------------------------------")
+        # 1) Rondas base según nota:  R_base = R̃(nota)
+        if nota < 700:
+            R_base = 3
+            dificultad_asignada = "Muy fácil"
+            v_off_asignada = 1
+            v_on_asignada = 4
+
+        elif nota < 900:
+            R_base = 4
+            dificultad_asignada = "Fácil"
+            v_off_asignada = 1
+            v_on_asignada = 3
+
+        elif nota < 1100:
+            R_base = 5
+            dificultad_asignada = "Intermedio bajo"
+            v_off_asignada = 1
+            v_on_asignada = 2
+
+        elif nota < 1300:
+            R_base = 7
+            dificultad_asignada = "Intermedio"
+            v_off_asignada = 0.5
+            v_on_asignada = 1
+
+        elif nota < 1500:
+            R_base = 10
+            dificultad_asignada = "Intermedio alto"
+            v_off_asignada = 0.25
+            v_on_asignada = 0.5
+
+        elif nota < 1700:
+            R_base = 12
+            dificultad_asignada = "Difícil"
+            v_off_asignada = 0.15
+            v_on_asignada = 0.25
+
+        else:
+            R_base = 15
+            dificultad_asignada = "Extremo"
+            v_off_asignada = 0.05
+            v_on_asignada = 0.1
+
+        # 2) Ajuste según T_res_partida: φ1(T_res_partida)
+        # Si tiene un promedio entre 4 y 10 lo deja igual, si no lo modifica a más fácil o difícil dependiendo.
+        T_res_partida = self.t_ult
+        if T_res_partida < 4.0:
+            phi_1 = 1.2
+        elif T_res_partida < 10.0:
+            phi_1 = 1.0
+        else:
+            phi_1 = 0.8
+
+        # 3) Ajuste según fallos y rondas completadas: φ2
+        #    Caso 1: El jugador completó TODAS las rondas
+        if self.aciertos_ult == self.rondas_ult:
+            if self.fallos_ult == 0:
+                # Completó todo sin fallos -> +20%
+                phi_2 = 1.2
+            else:
+                # Completó todo con alguno(s) fallo(s) -> no se baja ni se sube
+                phi_2 = 1.0
+        #    Caso 2: El jugador NO completó todas las rondas
+        else:
+            proporcion = self.aciertos_ult / self.rondas_ult if self.rondas_ult > 0 else 0
+            if proporcion < 0.3:
+                phi_2 = 0.8
+            elif proporcion < 0.8:
+                phi_2 = 0.9
+            else:
+                # Aquí llega si 0.8 <= proporcion < 1.0
+                phi_2 = 1.0
+
+        R_temp = R_base * phi_1 * phi_2
+        R_final = round(R_temp)  # Redondea al entero más cercano
+
+        if nota < 900:
+            # Para nota < 900: R_final se deja igual a R_base (sin moverse)
+            R_final = R_base
+
+        elif nota < 1100:
+            # Para nota entre [900, 1100): se puede bajar solo 1 o subir hasta 2
+            R_final = max(R_base - 1, min(R_base + 2, R_final))
+
+        elif nota < 1700:
+            # Para nota entre [1100, 1700): se puede mover ±2
+            R_final = max(R_base - 2, min(R_base + 2, R_final))
+
+        node.attrs["nombre"].value = self.nombre
+        node.attrs["nota"].value = str(self.nota_sim)
+        node.attrs["num_partidas"].value = str(self.num_partidas)
+        node.attrs["dificultad"].value = dificultad_asignada
+        node.attrs["rondas"].value = str(R_final)
+        node.attrs["v_off"].value = str(v_off_asignada)
+        node.attrs["v_on"].value = str(v_on_asignada)
+
+        self.vaciar_variables()
+        self.g.update_node(node)
+
+
     def vaciar_variables(self):
         self.nombre = None
         self.edad = None
@@ -206,9 +315,10 @@ class SpecificWorker(GenericWorker):
         self.aciertos_ult = None
         self.fallos_ult = None
         self.t_ult = None
-        self.nota_sim = None
+        self.nota_sim = 1000
         self.ss_du = None
-        self.ss_nota = None
+        self.ss_nota = 1000
+        self.num_partidas = None
 
     def return_to_false(self):
         node = self.g.get_node("Settings Adapter")
