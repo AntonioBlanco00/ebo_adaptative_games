@@ -25,6 +25,7 @@ from rich.console import Console
 from genericworker import *
 import interfaces as ifaces
 import time
+import math
 
 import pandas as pd
 
@@ -100,7 +101,7 @@ class SpecificWorker(GenericWorker):
 
     @QtCore.Slot()
     def compute(self):
-        print("a")
+
         return True
 
     def startup_check(self):
@@ -244,50 +245,75 @@ class SpecificWorker(GenericWorker):
             v_off_asignada = 0.05
             v_on_asignada = 0.1
 
-        # 2) Ajuste según T_res_partida: φ1(T_res_partida)
-        # Si tiene un promedio entre 4 y 10 lo deja igual, si no lo modifica a más fácil o difícil dependiendo.
-        T_res_partida = self.t_ult
-        if T_res_partida < 4.0:
-            phi_1 = 1.2
-        elif T_res_partida < 10.0:
-            phi_1 = 1.0
-        else:
-            phi_1 = 0.8
+        proporcion = 0.0
+        if self.rondas_ult > 0:
+            proporcion = self.aciertos_ult / self.rondas_ult
 
-        # 3) Ajuste según fallos y rondas completadas: φ2
-        #    Caso 1: El jugador completó TODAS las rondas
-        if self.aciertos_ult == self.rondas_ult:
+        # --- 3) Ajuste por porcentaje de aciertos ---
+        ajuste_aciertos = 0
+        if self.aciertos_ult == self.rondas_ult:  # Ha completado TODAS las rondas
             if self.fallos_ult == 0:
-                # Completó todo sin fallos -> +20%
-                phi_2 = 1.2
+                ajuste_aciertos = 2
             else:
-                # Completó todo con alguno(s) fallo(s) -> no se baja ni se sube
-                phi_2 = 1.0
-        #    Caso 2: El jugador NO completó todas las rondas
+                ajuste_aciertos = 1
         else:
-            proporcion = self.aciertos_ult / self.rondas_ult if self.rondas_ult > 0 else 0
-            if proporcion < 0.3:
-                phi_2 = 0.8
-            elif proporcion < 0.8:
-                phi_2 = 0.9
+            if proporcion >= 0.75:
+                ajuste_aciertos = 0
             else:
-                # Aquí llega si 0.8 <= proporcion < 1.0
-                phi_2 = 1.0
+                ajuste_aciertos = -1
 
-        R_temp = R_base * phi_1 * phi_2
-        R_final = round(R_temp)  # Redondea al entero más cercano
+        # --- 4) Ajuste por tiempo medio de respuesta ---
+        ajuste_tiempo = 0
+        if self.t_ult < 4.0:
+            ajuste_tiempo = 1
+        elif self.t_ult > 10.0:
+            ajuste_tiempo = -1
+        # Entre 4 y 10 => no hay ajuste (0)
 
-        if nota < 900:
-            # Para nota < 900: R_final se deja igual a R_base (sin moverse)
-            R_final = R_base
+        # Sumamos todos los ajustes a partir de R_ult
+        if self.aciertos_ult < R_base:
+            rondas = R_base
+        else:
+            rondas = self.aciertos_ult
 
-        elif nota < 1100:
-            # Para nota entre [900, 1100): se puede bajar solo 1 o subir hasta 2
-            R_final = max(R_base - 1, min(R_base + 2, R_final))
+        R_adjusted = rondas + ajuste_aciertos + ajuste_tiempo
 
-        elif nota < 1700:
-            # Para nota entre [1100, 1700): se puede mover ±2
-            R_final = max(R_base - 2, min(R_base + 2, R_final))
+        print(f"Ajuste por aciertos: {ajuste_aciertos}, Ajuste por tiempo: {ajuste_tiempo}")
+        print(f"R_ult + ajustes = {R_adjusted}")
+
+        # --- 5) hacemos la media aritmética entre R_base y R_adjusted
+        R_temp = (R_base + R_adjusted) / 2.0
+        print(f"R_temp (media de R_base y R_adjusted): {R_temp}")
+
+        # LOGICA FINAL DE RONDAS:
+        #  - Si nota >= 1700 (Extremo): si R_adjusted > R_base => R_final=R_adjusted, si no => R_final=R_base
+        #  - En caso contrario, usamos la lógica previa de redondeo
+
+        if nota >= 1700:
+            # Nivel extremo
+            if self.aciertos_ult > R_base:
+                R_final = R_adjusted
+                print("Nivel Extremo: R_adjusted > R_base -> tomamos R_adjusted")
+            else:
+                R_final = R_base + ajuste_aciertos + ajuste_tiempo
+                print("Nivel Extremo: R_adjusted <= R_base -> tomamos R_base + ajuste_aciertos + ajuste_tiempo")
+        else:
+            # Niveles inferiores: lógica de redondeo
+            if R_base == self.rondas_ult:
+                # Si R_base == R_ult => No redondeamos, usamos R_adjusted directamente
+                R_final = R_adjusted
+                print(f"R_base == R_ult -> R_final = {R_final}")
+            else:
+                # Redondeo al alza
+                R_final = math.ceil(R_temp)
+                print(f"R_base != R_ult -> redondeo al alza: R_final = {R_final}")
+
+        # Forzar un mínimo de 3 rondas
+        if R_final < 3:
+            R_final = 3
+
+        print(f"R_final tras mínimo de 3: {R_final}")
+        print("------------------------------------------")
 
         node.attrs["nombre"].value = self.nombre
         node.attrs["nota"].value = str(self.nota_sim)

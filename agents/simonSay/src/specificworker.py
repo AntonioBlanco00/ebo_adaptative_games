@@ -693,7 +693,7 @@ class SpecificWorker(GenericWorker):
         self.nombre = self.ui2.usuario.toPlainText()
         self.intentos = 2
         self.rondas = 4
-        self.dificultad = "facil"
+        self.dificultad = "Fácil"
         self.first_time()
         # Validaciones simples
         if not self.nombre:
@@ -915,7 +915,7 @@ class SpecificWorker(GenericWorker):
 
     def calc_new_score(self, resultado):
         # Variables para los cálculos:
-        K_min = 20
+        K_min = 40
         K_max = 400
         alpha = 0.3466
 
@@ -928,8 +928,8 @@ class SpecificWorker(GenericWorker):
         rondas_totales = int(self.rondas)
         fallos_totales = int(self.fallos)
 
-        D_min = 0.75
-        D_max = 6
+        D_min = 31/20
+        D_max = 31.5
 
         node = self.g.get_node("Simon Say")
         actual_score = node.attrs["nota"].value
@@ -981,6 +981,24 @@ class SpecificWorker(GenericWorker):
 
         new_score = round(float(actual_score) + K_game * (S - E))
         print("Nuevo ELO: ", new_score)
+
+        # ---- CORRECCIÓN POSTERIOR ----
+        diff = new_score - int(actual_score)
+        # 1) Si superó 75% de rondas => mínimo +40
+        if ratio >= 0.75:
+            if diff < 41:
+                print(f"Incremento de {diff} < 41 => se fuerza a +41")
+                new_score = int(actual_score) + 41
+        # 2) Si NO superó el 75% => mínimo de -40
+        else:
+            if diff > -41:
+                print(f"Diferencia de {diff} > -41 => se fuerza a -41")
+                new_score = int(actual_score) - 41
+
+        # Redondeo final
+        new_score = round(new_score)
+        print("Nuevo ELO final: ", new_score)
+
         self.puntuacion = new_score
 
         self.media = round(self.media, 2)
@@ -1168,6 +1186,7 @@ class SpecificWorker(GenericWorker):
         self.v1 = self.v_values[nivel_temporal]["v_on"]
         print(f"Valores actualizados: v_off = {self.v2}, v_on = {self.v1}")
 
+
     # =============== Methods for Component Implements ==================
     # ===================================================================
 
@@ -1235,12 +1254,11 @@ class SpecificWorker(GenericWorker):
     # self.speech_proxy.say(...)
 
 
-
     # =============== DSR SLOTS  ================
     # =============================================
 
     def update_node_att(self, id: int, attribute_names: [str]):
-        # console.print(f"UPDATE NODE ATT: {id} {attribute_names}", style='green')
+
         pass
     def update_node(self, id: int, type: str):
         console.print(f"UPDATE NODE: {id} {type}", style='green')

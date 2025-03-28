@@ -19,6 +19,8 @@ ruta5="../settings_adapter"
 nombre5="Settings_Adapter"
 ruta6="../storytelling"
 nombre6="Storytelling"
+ruta7="../simonSay"
+nombre7="SimonSay"
 
 
 # Función para cambiar el nombre de la pestaña
@@ -62,5 +64,6 @@ abrir_nueva_pestania "$ruta3" "$nombre3" "src/csv_manager.py etc/config"
 abrir_nueva_pestania "$ruta4" "$nombre4" "src/ebo_gpt.py etc/config"
 abrir_nueva_pestania "$ruta5" "$nombre5" "src/settings_adapter.py etc/config"
 abrir_nueva_pestania "$ruta6" "$nombre6" "src/storytelling.py etc/config"
+abrir_nueva_pestania "$ruta7" "$nombre7" "src/simonSay.py etc/config"
 
 
