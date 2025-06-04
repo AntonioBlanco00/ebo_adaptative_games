@@ -1,0 +1,60 @@
+{
+    "preguntas": [
+        {
+            "letra": "A",
+            "definicion": "Siglas que hacen referencia a las tareas cotidianas esenciales para la autonomía personal.",
+            "respuesta": "AVD"
+        },
+        {
+            "letra": "B",
+            "definicion": "Método terapéutico para mejorar el movimiento y la postura en trastornos neurológicos como la parálisis cerebral.",
+            "respuesta": "Bobath"
+        },
+        {
+            "letra": "C",
+            "definicion": "Técnica terapéutica basada en el uso del movimiento para recuperar funciones motoras.",
+            "respuesta": "Cinesiterapia"
+        },
+        {
+            "letra": "D",
+            "definicion": "Dificultad para tragar que puede afectar la alimentación y nutrición de una persona.",
+            "respuesta": "Disfagia"
+        },
+        {
+            "letra": "E",
+            "definicion": "Ciencia que estudia la adaptación del entorno para mejorar la eficiencia y bienestar del usuario.",
+            "respuesta": "Ergonomía"
+        },
+        {
+            "letra": "G",
+            "definicion": "Técnica utilizada para medir los ángulos de las articulaciones y evaluar el rango de movimiento.",
+            "respuesta": "Goniometría"
+        },
+        {
+            "letra": "O",
+            "definicion": "Actividad con propósito y valor personal, esencial en la terapia ocupacional para promover salud y bienestar.",
+            "respuesta": "Ocupación significativa"
+        },
+        {
+            "letra": "Q",
+            "definicion": "Habilidad que permite mantener el control postural en diversas posiciones y movimientos.",
+            "respuesta": "Equilibrio"
+        },
+        {
+            "letra": "R",
+            "definicion": "Uso de robots para facilitar la interacción, asistencia y rehabilitación de personas con discapacidad.",
+            "respuesta": "Robótica social"
+        },
+        {
+            "letra": "T",
+            "definicion": "Desplazamientos del cuerpo de un lugar a otro, esenciales para la movilidad funcional y la independencia.",
+            "respuesta": "Transferencias"
+        },
+        {
+            "letra": "Y",
+            "definicion": "Herramienta, dispositivo o equipo diseñado para facilitar la realización de actividades cotidianas a personas con discapacidad o limitaciones funcionales, mejorando su autonomía y calidad de vida.",
+            "respuesta": "Ayuda técnica o producto de apoyo"
+        }
+    ]
+}
+

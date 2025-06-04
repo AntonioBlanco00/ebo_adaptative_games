@@ -21,7 +21,7 @@
 
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
-from numba.core.typing.builtins import Print
+# from numba.core.typing.builtins import Print
 from rich.console import Console
 from genericworker import *
 import interfaces as ifaces

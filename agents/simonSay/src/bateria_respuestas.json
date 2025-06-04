@@ -1,0 +1,67 @@
+{
+    "responder": [
+        "Responde ahora!",
+        "Te toca responder!",
+        "Es tu turno, adelante!",
+        "Vamos, responde ya!",
+        "Es tu momento, responde ahora!",
+        "¡Adelante, es tu turno!",
+        "¡Responde con confianza!",
+        "¡Vamos, tú puedes responder ahora!"
+    ],
+    "aciertos": [
+        "¡Has acertado!",
+        "¡Lo estás haciendo genial!",
+        "¡Acertaste, increíble!",
+        "¡Eso es correcto, muy bien hecho!",
+        "¡Perfecto, acertaste!",
+        "¡Muy bien, respuesta correcta!",
+        "¡Qué acierto tan brillante!",
+        "¡Excelente, lo conseguiste!"
+    ],
+    "fallos": [
+        "¡Fallo, pero no te preocupes! Lo pondremos un poco más fácil... solo por esta vez.",
+        "No pasa nada, todos fallamos. Vamos a bajarle un pelín la dificultad, ¿vale?",
+        "Sigue intentándolo, ¡lo harás mejor! Te echamos una mano con una más sencilla.",
+        "Es un error, pero no te rindas. La siguiente será un poco más fácil... por esta vez.",
+        "¡Ánimo, la próxima será mejor! Vamos a suavizar un poco el reto.",
+        "¡No te preocupes, sigue adelante! Te damos un respiro con la siguiente.",
+        "¡Un tropiezo no define tu esfuerzo! Esta vez te lo ponemos un poquito más fácil.",
+        "¡No pasa nada, la práctica hace al maestro! Prueba con esta, que es más asequible."
+    ],
+    "rondas": [
+        "Es hora de la ronda número {ronda}!",
+        "¡Ronda número {ronda}, vamos allá!",
+        "¡Toca la ronda número {ronda}!",
+        "Preparados para la ronda número {ronda}!",
+        "Comienza la ronda número {ronda}, ¡suerte!",
+        "¡Atentos, comienza la ronda {ronda}!",
+        "¡Vamos con la emocionante ronda número {ronda}!",
+        "¡Que comience la ronda número {ronda}, mucha suerte!"
+    ],
+    "fin_juego": [
+        "El juego ha terminado, ¡lo has hecho genial!",
+        "¡Fin del juego, muy bien jugado!",
+        "Esto ha sido todo, ¡excelente trabajo!",
+        "¡Gran final, lo hiciste estupendamente!",
+        "Juego terminado, ¡felicitaciones por tu esfuerzo!",
+        "¡Increíble, has completado el juego!",
+        "¡Fantástico, qué gran partida!",
+        "¡Finalizado, te has lucido!"
+    ],
+    "racha": [
+    "¡Estás en racha, pero prepárate, ahora será más complicado!",
+    "¡Impresionante racha! Vamos a subir un poco el nivel.",
+    "¡Sigues acertando! Esta siguiente será un poco más difícil.",
+    "¡Qué buena racha llevas! A ver si puedes con esta...",
+    "¡Estás imparable! Pero cuidado, la dificultad aumenta.",
+    "¡Vas en racha! Esta vez no será tan fácil.",
+    "¡Muy bien! Tu racha continúa, pero esto se pone interesante.",
+    "¡Wow, sigues encendido! Vamos a probar tu habilidad con algo más complejo.",
+    "¡Racha activa! Pero cada acierto te lo pondrá más difícil.",
+    "¡Nada te detiene! Aunque ahora la cosa se complica un poco.",
+    "¡Estás encadenando aciertos! La siguiente pondrá a prueba tu destreza.",
+    "¡No paras de acertar! Subamos el nivel un poco más."
+]
+}
+

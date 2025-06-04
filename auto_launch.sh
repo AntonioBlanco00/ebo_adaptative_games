@@ -6,20 +6,28 @@ yakuake &
 # Esperar un momento para que Yakuake se abra completamente
 sleep 3
 
+ruta="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Definir las rutas y nombres de las pestañas
 ruta1="$HOME/robocomp/components/dsr-graph/components/idserver"
 nombre1="DSR"
-ruta2="agents/app_juegos"
+
+ruta2="$ruta/agents/app_juegos"      # <— ahora absoluta
 nombre2="APP_Juegos"
-ruta3="../csv_manager"
+
+ruta3="$ruta/agents/csv_manager"
 nombre3="CSV_Manager"
-ruta4="../ebo_gpt"
+
+ruta4="$ruta/agents/ebo_gpt"
 nombre4="EBO_GPT"
-ruta5="../settings_adapter"
+
+ruta5="$ruta/agents/settings_adapter"
 nombre5="Settings_Adapter"
-ruta6="../storytelling"
+
+ruta6="$ruta/agents/storytelling"
 nombre6="Storytelling"
-ruta7="../simonSay"
+
+ruta7="$ruta/agents/simonSay"
 nombre7="SimonSay"
 
 

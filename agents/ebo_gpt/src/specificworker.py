@@ -287,8 +287,13 @@ class SpecificWorker(GenericWorker):
         else:
             self.set_all_LEDS_colors(0,0,0,0)
             self.start_rotating_effect()
+            t0 = time.perf_counter()
             run_id = self.send_message_to_assistant(self.client, self.thread_id, self.assistant_id, message)
             response = self.get_assistant_response(self.client, self.thread_id, run_id)
+            dt = time.perf_counter() - t0
+
+            print(f"[GPT] Latencia: {dt:.3f} s")
+
             # print(f"Respuesta del asistente: {response}")
             # self.actualizar_to_say(response)
             response_final, last_word = self.split_last_word(response)

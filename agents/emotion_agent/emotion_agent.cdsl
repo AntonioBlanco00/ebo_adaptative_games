@@ -1,0 +1,12 @@
+import "CameraSimple.idsl";
+
+Component emotion_agent
+{
+    Communications
+    {
+        requires CameraSimple;
+    };
+    language python;
+    options dsr;
+};
+

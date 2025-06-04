@@ -179,19 +179,19 @@ class SpecificWorker(GenericWorker):
     def update_storytelling(self):
         node = self.g.get_node("CSV Manager")
         node.attrs["nombre"].value = self.nombre
-        node.attrs["edad"].value = str(self.edad)
-        node.attrs["aficiones"].value = self.aficiones
-        node.attrs["familiares"].value = self.familiares
-        node.attrs["st_jc"].value = self.story_completados
+        node.attrs["edad"].value = str(self.edad) or ""
+        node.attrs["aficiones"].value = self.aficiones or ""
+        node.attrs["familiares"].value = self.familiares or ""
+        node.attrs["st_jc"].value = self.story_completados or ""
         self.vaciar_variables()
         self.g.update_node(node)
 
     def update_conversation(self):
         node = self.g.get_node("CSV Manager")
         node.attrs["nombre"].value = self.nombre
-        node.attrs["edad"].value = str(self.edad)
-        node.attrs["aficiones"].value = self.aficiones
-        node.attrs["familiares"].value = self.familiares
+        node.attrs["edad"].value = str(self.edad) or ""
+        node.attrs["aficiones"].value = self.aficiones or ""
+        node.attrs["familiares"].value = self.familiares or ""
         self.vaciar_variables()
         self.g.update_node(node)
 

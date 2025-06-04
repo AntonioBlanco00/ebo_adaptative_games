@@ -1,0 +1,14 @@
+# Proxies for required interfaces
+CameraSimpleProxy = camerasimple:tcp -h 192.168.5.19 -p 10195
+
+
+
+
+
+Ice.Warn.Connections=0
+Ice.Trace.Network=0
+Ice.Trace.Protocol=0
+Ice.MessageSizeMax=20004800
+
+
+

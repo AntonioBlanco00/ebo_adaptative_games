@@ -1,0 +1,135 @@
+{
+    "preguntas": [
+        {
+            "letra": "A",
+            "definicion": "Dispositivo con el que emito sonidos",
+            "respuesta": "Altavoz"
+        },
+        {
+            "letra": "B",
+            "definicion": "Animal nocturno que tiene los ojos muy grandes",
+            "respuesta": "Búho"
+        },
+        {
+            "letra": "C",
+            "definicion": "Lo contrario de largo",
+            "respuesta": "Corto"
+        },
+        {
+            "letra": "D",
+            "definicion": "Séptimo día de la semana, que viene después del sábado",
+            "respuesta": "Domingo"
+        },
+        {
+            "letra": "E",
+            "definicion": "Animal con una trompa muy larga",
+            "respuesta": "Elefante"
+        },
+        {
+            "letra": "F",
+            "definicion": "Persona que hace fotos",
+            "respuesta": "Fotógrafo"
+        },
+        {
+            "letra": "G",
+            "definicion": "Enemigo del perro",
+            "respuesta": "Gato"
+        },
+        {
+            "letra": "H",
+            "definicion": "Los ponen las gallinas y de ahí nacen los pollitos",
+            "respuesta": "Huevos"
+        },
+        {
+            "letra": "I",
+            "definicion": "Casa de hielo donde viven los esquimales",
+            "respuesta": "Iglú"
+        },
+        {
+            "letra": "J",
+            "definicion": "Animal que tiene el cuello muy alto",
+            "respuesta": "Jirafa"
+        },
+        {
+            "letra": "K",
+            "definicion": "Animal que parece un oso pequeño, que le encanta subirse a los árboles y vive en Australia",
+            "respuesta": "Koala"
+        },
+        {
+            "letra": "L",
+            "definicion": "Dispositivos con los que emito luz",
+            "respuesta": "Leds"
+        },
+        {
+            "letra": "M",
+            "definicion": "Mueble con forma de tablero horizontal que sirve para comer y hacer los deberes",
+            "respuesta": "Mesa"
+        },
+        {
+            "letra": "N",
+            "definicion": "Parte de la cara que sirve para oler y respirar",
+            "respuesta": "Nariz"
+        },
+        {
+            "letra": "O",
+            "definicion": "Los utilizas para ver",
+            "respuesta": "Ojos"
+        },
+        {
+            "letra": "P",
+            "definicion": "Dispositivo en el que veis mis emociones",
+            "respuesta": "Pantalla"
+        },
+        {
+            "letra": "Q",
+            "definicion": "Comida que le gusta mucho a los ratones",
+            "respuesta": "Queso"
+        },
+        {
+            "letra": "R",
+            "definicion": "Componentes con los que puedo moverme",
+            "respuesta": "Ruedas"
+        },
+        {
+            "letra": "S",
+            "definicion": "Te sientas en ella",
+            "respuesta": "Silla"
+        },
+        {
+            "letra": "T",
+            "definicion": "Aparato que sirve para ver los dibujos animados y las noticias",
+            "respuesta": "Televisión"
+        },
+        {
+            "letra": "U",
+            "definicion": "Fruta que comemos por año nuevo y que crece en racimos",
+            "respuesta": "Uva"
+        },
+        {
+            "letra": "V",
+            "definicion": "Animal que da leche",
+            "respuesta": "Vaca"
+        },
+        {
+            "letra": "W",
+            "definicion": "Fruta marrón por fuera y verde por dentro",
+            "respuesta": "Kiwi"
+        },
+        {
+            "letra": "X",
+            "definicion": "Persona que conduce un taxi",
+            "respuesta": "Taxista"
+        },
+        {
+            "letra": "Y",
+            "definicion": "Hembra del caballo",
+            "respuesta": "Yegua"
+        },
+        {
+            "letra": "Z",
+            "definicion": "Los llevas puestos en los pies",
+            "respuesta": "Zapatos"
+        }
+        
+    ]
+}

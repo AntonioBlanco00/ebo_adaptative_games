@@ -38,7 +38,11 @@ import pandas as pd
 from datetime import datetime
 import csv
 import math
+import json
+import csv
+from pathlib import Path
 
+CSV_PATH = Path(__file__).resolve().parent / "../../users_info.csv"
 
 
 sys.path.append('/opt/robocomp/lib')
@@ -140,61 +144,19 @@ class SpecificWorker(GenericWorker):
             "Rondas completadas", "Fallos", "Tiempo transcurrido (min)", "Tiempo transcurrido (seg)", "Tiempo medio respuesta (seg):", "Puntuación"
         ])
 
-        ########## BATERÍA DE RESPUESTAS ##########
-        self.bateria_responder = [
-            "Responde ahora!",
-            "Te toca responder!",
-            "Es tu turno, adelante!",
-            "Vamos, responde ya!",
-            "Es tu momento, responde ahora!",
-            "¡Adelante, es tu turno!",
-            "¡Responde con confianza!",
-            "¡Vamos, tú puedes responder ahora!"
-        ]
+        ########## CARGAR BATERÍA DE RESPUESTAS ##########
+        with open("src/bateria_respuestas.json", "r", encoding="utf-8") as file:
+            baterias = json.load(file)
 
-        self.bateria_aciertos = [
-            "¡Has acertado!",
-            "¡Lo estás haciendo genial!",
-            "¡Acertaste, increíble!",
-            "¡Eso es correcto, muy bien hecho!",
-            "¡Perfecto, acertaste!",
-            "¡Muy bien, respuesta correcta!",
-            "¡Qué acierto tan brillante!",
-            "¡Excelente, lo conseguiste!"
-        ]
+        self.bateria_responder = baterias["responder"]
+        self.bateria_aciertos = baterias["aciertos"]
+        self.bateria_fallos = baterias["fallos"]
+        self.bateria_rondas = baterias["rondas"]
+        self.baterias_racha = baterias["racha"]
+        self.bateria_fin_juego = baterias["fin_juego"]
 
-        self.bateria_fallos = [
-            "Fallo, pero no te preocupes!",
-            "No pasa nada, todos fallamos!",
-            "Sigue intentándolo, ¡lo harás mejor!",
-            "Es un error, pero no te rindas!",
-            "¡Ánimo, la próxima será mejor!",
-            "¡No te preocupes, sigue adelante!",
-            "¡Un tropiezo no define tu esfuerzo!",
-            "¡No pasa nada, la práctica hace al maestro!"
-        ]
+        self.bateria_rondas_actual = self.bateria_rondas
 
-        self.bateria_rondas = [
-            "Es hora de la ronda número {ronda}!",
-            "¡Ronda número {ronda}, vamos allá!",
-            "¡Toca la ronda número {ronda}!",
-            "Preparados para la ronda número {ronda}!",
-            "Comienza la ronda número {ronda}, ¡suerte!",
-            "¡Atentos, comienza la ronda {ronda}!",
-            "¡Vamos con la emocionante ronda número {ronda}!",
-            "¡Que comience la ronda número {ronda}, mucha suerte!"
-        ]
-
-        self.bateria_fin_juego = [
-            "El juego ha terminado, ¡lo has hecho genial!",
-            "¡Fin del juego, muy bien jugado!",
-            "Esto ha sido todo, ¡excelente trabajo!",
-            "¡Gran final, lo hiciste estupendamente!",
-            "Juego terminado, ¡felicitaciones por tu esfuerzo!",
-            "¡Increíble, has completado el juego!",
-            "¡Fantástico, qué gran partida!",
-            "¡Finalizado, te has lucido!"
-        ]
         # Diccionario con los valores de v_off y v_on para cada nivel de dificultad.
         self.v_values = {
             "Muy fácil": {"v_off": 1, "v_on": 4},
@@ -284,7 +246,7 @@ class SpecificWorker(GenericWorker):
         rondas = self.rondas
 
         while i < int(rondas) and self.running:
-            self.speech_proxy.say(self.elegir_respuesta(self.bateria_rondas, ronda= i+1), False)
+            self.speech_proxy.say(self.elegir_respuesta(self.bateria_rondas_actual, ronda= i+1), False)
             print(f"Ronda número {i + 1}")
             self.rondas_complet = i+1
             self.RT_adjust()
@@ -691,6 +653,10 @@ class SpecificWorker(GenericWorker):
     def therapist(self):
         # Obtiene los valores ingresados en los campos
         self.nombre = self.ui2.usuario.toPlainText()
+        self.primer_partida()
+
+
+    def primer_partida(self):
         self.intentos = 2
         self.rondas = 4
         self.dificultad = "Fácil"
@@ -715,11 +681,15 @@ class SpecificWorker(GenericWorker):
         self.introduccion()
         self.procesoJuego()
 
-    def automatic(self):
-        self.dificultad = "auto"
-        self.select_user()
-        self.leerDatos()
 
+    def automatic(self):
+        if self.first_game():
+            self.select_user()
+            self.primer_partida()              # ← cámbiala por la tuya
+            return
+
+        self.dificultad = "auto"
+        self.leerDatos()
         self.intentos = 2
 
         # Muestra los valores en consola
@@ -747,6 +717,27 @@ class SpecificWorker(GenericWorker):
         self.hora = datetime.now().strftime("%H:%M:%S")
 
         self.procesoJuego()
+
+    def first_game(self) -> bool:
+        """
+        Devuelve True si el usuario no tiene todavía un número de partidas
+        registrado en users_info.csv (columna 'num_partidas' vacía o None).
+        En cualquier otro caso devuelve False.
+        """
+        try:
+            with CSV_PATH.open(newline="", encoding="utf-8") as f:
+                lector = csv.DictReader(f)
+                for fila in lector:
+                    if fila.get("nombre") == self.nombre:
+                        num = fila.get("num_partidas")
+                        return (num is None) or (str(num).strip() == "")
+        except FileNotFoundError:
+            # Si el CSV no existe consideramos que es el primer juego
+            print(f"Advertencia: no se encontró el archivo {CSV_PATH}")
+            return True
+
+        # Si el usuario no está en el CSV, lo tratamos como primer juego
+        return True
 
     ####################################################################################################################################
     
@@ -983,17 +974,17 @@ class SpecificWorker(GenericWorker):
         print("Nuevo ELO: ", new_score)
 
         # ---- CORRECCIÓN POSTERIOR ----
-        diff = new_score - int(actual_score)
+        diff = new_score - float(actual_score)
         # 1) Si superó 75% de rondas => mínimo +40
         if ratio >= 0.75:
             if diff < 41:
                 print(f"Incremento de {diff} < 41 => se fuerza a +41")
-                new_score = int(actual_score) + 41
+                new_score = float(actual_score) + 41
         # 2) Si NO superó el 75% => mínimo de -40
         else:
             if diff > -41:
                 print(f"Diferencia de {diff} > -41 => se fuerza a -41")
-                new_score = int(actual_score) - 41
+                new_score = float(actual_score) - 41
 
         # Redondeo final
         new_score = round(new_score)
@@ -1171,6 +1162,7 @@ class SpecificWorker(GenericWorker):
         elif self.racha >= 3 and self.fallo_detectado is False:
             print(f"Racha alta ({self.racha}) detectada: ajustando valores a nivel superior.")
             indice_base = self.niveles.index(nivel_base)
+            self.bateria_rondas_actual = self.baterias_racha
             if indice_base < len(self.niveles) - 1:
                 nivel_temporal = self.niveles[indice_base + 1]
                 print(f"Se utilizarán los valores del nivel superior: '{nivel_temporal}'")
@@ -1178,6 +1170,7 @@ class SpecificWorker(GenericWorker):
                 print(f"Ya se encuentra en el nivel máximo ('{nivel_base}'); se mantienen los valores base.")
         elif self.fallo_detectado is True and self.racha >= 3:
             self.racha = 0
+            self.bateria_rondas_actual = self.bateria_rondas
         else:
             print(f"Racha de {self.racha}: se mantienen los valores del nivel base ('{nivel_base}').")
 

@@ -1,0 +1,22 @@
+# Endpoints for implements interfaces
+Pasapalabra.Endpoints=tcp -p 11447
+
+
+# Proxies for required interfaces
+CameraSimpleProxy = camerasimple:tcp -h localhost -p 11642
+EmotionalMotorProxy = emotionalmotor:tcp -h localhost -p 10773
+GestorSGProxy = gestorsg:tcp -h localhost -p 12309
+LEDArrayProxy = ledarray:tcp -h localhost -p 11284
+SpeechProxy = speech:tcp -h localhost -p 11819
+
+
+
+
+
+Ice.Warn.Connections=0
+Ice.Trace.Network=0
+Ice.Trace.Protocol=0
+Ice.MessageSizeMax=20004800
+
+
+

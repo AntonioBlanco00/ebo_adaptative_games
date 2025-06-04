@@ -218,6 +218,8 @@ class SpecificWorker(GenericWorker):
             print("Por favor selecciona una personalidad.")
             return
 
+        self.update_dsr()
+
         self.ui2.nombreE.clear()
         self.ui2.aficionE.clear()
         self.ui2.edadE.clear()
@@ -284,7 +286,7 @@ class SpecificWorker(GenericWorker):
                           f"Edad: {self.edad}. "
                           f"Aficiones: {self.aficiones}. "
                           f"Familiares: {self.familiares}. "
-                          f"Presentate, saludale e inicia la conversación adaptandote a sus aficiones. Más adelante puedes preguntarle por sus aficiones"
+                          f"Saludale que ya os conoceis, e inicia la conversación adaptandote a sus aficiones."
                           )
         print("-------------------------------------------------------------------")
         print(self.user_info)
@@ -381,6 +383,8 @@ class SpecificWorker(GenericWorker):
         self.aficiones = self.ui3.aficionE.toPlainText()
         self.edad = self.ui3.edadE.toPlainText()
         self.familiares = self.ui3.famiE.toPlainText()
+
+        self.update_dsr()
         
         folder_path = "../juegos_story"
         archivo_json = f"{juego}.json"
@@ -407,6 +411,14 @@ class SpecificWorker(GenericWorker):
         # START CHAT
         self.gpt_proxy.startChat()
         self.ui4.text_info.setText("Introduzca respuesta")
+
+    def update_dsr(self):
+        node = self.g.get_node("CSV Manager")
+        node.attrs["nombre"].value = self.nombre_jugador
+        node.attrs["aficiones"].value = self.aficiones
+        node.attrs["edad"].value = self.edad
+        node.attrs["familiares"].value = self.familiares
+        self.g.update_node(node)
 
     def setDatos_clicked(self):
         self.nombre_jugador = self.ui3.nombreE.toPlainText()
@@ -599,6 +611,7 @@ class SpecificWorker(GenericWorker):
     ####################################################################################################################################
 
     def vaciar_csv_manager(self):
+        print("VACIAR CSV MANAGER LLAMADO")
         node = self.g.get_node("CSV Manager")
         atributos_ignore = ["ID", "name", "pos_x", "pos_y", "pp_sv", "actualizar_info"]
 
@@ -623,12 +636,14 @@ class SpecificWorker(GenericWorker):
         self.g.update_node(node)
 
     def lanzar_ui2(self):
+        self.ui2 = self.conversational_ui()
         self.game_selected_dsr("Conversation")
         self.centrar_ventana(self.ui2)
         self.ui2.show()
         QApplication.processEvents()
 
     def lanzar_ui3(self):
+        self.ui3 = self.storytelling_ui()
         self.game_selected_dsr("Storytelling")
         self.centrar_ventana(self.ui3)
         self.ui3.show()

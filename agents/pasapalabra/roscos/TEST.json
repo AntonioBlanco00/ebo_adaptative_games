@@ -1,0 +1,110 @@
+{
+    "preguntas": [
+        {
+            "letra": "A",
+            "definicion": "Esto es una pregunta fácil",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Fácil"
+        },
+        {
+            "letra": "B",
+            "definicion": "Esto es una pregunta fácil",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Fácil"
+        },
+        {
+            "letra": "C",
+            "definicion": "Esto es una pregunta fácil",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Fácil"
+        },
+        {
+            "letra": "D",
+            "definicion": "Esto es una pregunta fácil",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Fácil"
+        },
+        {
+            "letra": "E",
+            "definicion": "Esto es una pregunta fácil",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Fácil"
+        },
+        {
+            "letra": "F",
+            "definicion": "Esto es una pregunta media",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Media"
+        },
+        {
+            "letra": "G",
+            "definicion": "Esto es una pregunta media",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Media"
+        },
+        {
+            "letra": "H",
+            "definicion": "Esto es una pregunta media",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Media"
+        },
+        {
+            "letra": "I",
+            "definicion": "Esto es una pregunta media",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Media"
+        },
+        {
+            "letra": "J",
+            "definicion": "Esto es una pregunta media",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Media"
+        },
+        {
+            "letra": "K",
+            "definicion": "Esto es una pregunta difícil",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Difícil"
+        },
+        {
+            "letra": "L",
+            "definicion": "Esto es una pregunta difícil",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Difícil"
+        },
+        {
+            "letra": "M",
+            "definicion": "Esto es una pregunta difícil",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Difícil"
+        },
+        {
+            "letra": "N",
+            "definicion": "Esto es una pregunta difícil",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Difícil"
+        },
+        {
+            "letra": "P",
+            "definicion": "Esto es una pregunta difícil",
+            "respuesta": "TEST",
+            "pista": "PISTA DE PRUEBA",
+            "dificultad": "Difícil"
+        }
+    ]
+}
+
