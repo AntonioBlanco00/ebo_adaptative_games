@@ -1,4 +1,27 @@
 .idea/
 agents/ebo_gpt/.env
+
+# Python
 __pycache__/
 *.pyc
+
+# Archivos generados por CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.log
+CMakeTmp/
+*.marks
+*.bin
+*.ts
+*.make
+*.cmake
+
+# Archivos temporales y backups
+*.new
+tmp/
+
+# Otros archivos específicos que no necesitas subir
+*.out
+

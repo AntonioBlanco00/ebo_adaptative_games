@@ -156,7 +156,7 @@ class SpecificWorker(GenericWorker):
 
         pass
 
-    def change_info(self):
+    def change_info(self): # Lee del csv de la base de datos y llama a la función del juego que sea para cargar sus infos
         node_game = self.g.get_node("Actual Game")
         game = node_game.attrs["actual_game"].value
         self.obtener_datos()
@@ -175,6 +175,7 @@ class SpecificWorker(GenericWorker):
 
         elif game == "Pasapalabra":
             print("Cargando info para Pasapalabra")
+            self.update_pasapalabra()
 
     def update_storytelling(self):
         node = self.g.get_node("CSV Manager")
@@ -192,6 +193,14 @@ class SpecificWorker(GenericWorker):
         node.attrs["edad"].value = str(self.edad) or ""
         node.attrs["aficiones"].value = self.aficiones or ""
         node.attrs["familiares"].value = self.familiares or ""
+        self.vaciar_variables()
+        self.g.update_node(node)
+
+    def update_pasapalabra(self):
+        node = self.g.get_node("CSV Manager")
+        node.attrs["nombre"].value = self.nombre
+        node.attrs["pp_nota"].value = str(self.nota_psp) or ""
+        node.attrs["pp_rc"].value = self.roscos_completados or ""
         self.vaciar_variables()
         self.g.update_node(node)
 

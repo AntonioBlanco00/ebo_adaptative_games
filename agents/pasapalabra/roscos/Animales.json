@@ -1,54 +1,110 @@
 {
-    "preguntas": [
-        {
-            "letra": "A",
-            "definicion": "Animal que vuela y que contribuye a la creación de la miel",
-            "respuesta": "Abeja"
-        },
-        {
-            "letra": "C",
-            "definicion": "Ave que se dice que trae a los niños y podemos verla en Cáceres",
-            "respuesta": "Cigüeña"
-        },
-        {
-            "letra": "E",
-            "definicion": "Animal de gran tamaño, con dos grandes orejas y una trompa muy larga",
-            "respuesta": "Elefante"
-        },
-        {
-            "letra": "G",
-            "definicion": "Animal doméstico, que maulla y si se enfada araña.",
-            "respuesta": "Gato"
-        },
-        {
-            "letra": "L",
-            "definicion": "Además de ser el rey de la selva, es un personaje muy frecuente en cuentos.",
-            "respuesta": "León"
-        },
-        {
-            "letra": "O",
-            "definicion": "Animal perezoso de gran tamaño que vive en una cueva",
-            "respuesta": "Oso"
-        },
-        {
-            "letra": "P",
-            "definicion": "Se dice de este animal, que es el mejor amigo del hombre",
-            "respuesta": "Perro"
-        },
-        {
-            "letra": "R",
-            "definicion": "Animal pequeño que es perseguido por los gatos",
-            "respuesta": "Ratón o Rata"
-        },
-        {
-            "letra": "S",
-            "definicion": "Reptíl sin patas, que es capaz de desplazarse por tierra y por agua",
-            "respuesta": "Serpiente"
-        },
-        {
-            "letra": "Y",
-            "definicion": "Hembra del caballo",
-            "respuesta": "Yegua"
-        }
-    ]
+  "preguntas": [
+    {
+      "letra": "A",
+      "definicion": "Insecto pequeño que vuela, hace miel y puede picar.",
+      "respuesta": "Abeja",
+      "pista": "Zumba y vive en colmenas",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "B",
+      "definicion": "Animal de carga que se utiliza en el campo para transportar y trabajar.",
+      "respuesta": "Burro",
+      "pista": "Tiene orejas largas y rebuzna",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "C",
+      "definicion": "Ave que se dice que trae a los niños y podemos verla en Cáceres.",
+      "respuesta": "Cigüeña",
+      "pista": "Es alta, blanca y con pico largo",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "D",
+      "definicion": "Animal marino con aletas que nada en grupo.",
+      "respuesta": "Delfín",
+      "pista": "Salta en el agua y es muy listo",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "E",
+      "definicion": "Animal de gran tamaño, con dos grandes orejas y una trompa muy larga.",
+      "respuesta": "Elefante",
+      "pista": "Vive en la selva, pesa mucho y tiene colmillos",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "G",
+      "definicion": "Animal que maulla y si se enfada araña.",
+      "respuesta": "Gato",
+      "pista": "Hay muchos callejeros, que husmean en la basura",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "L",
+      "definicion": "Animal salvaje conocido como el rey de la selva, es un personaje muy frecuente en cuentos.",
+      "respuesta": "León",
+      "pista": "Vive en África y tiene una gran melena",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "M",
+      "definicion": "Insecto con muchos colores que sale de una oruga.",
+      "respuesta": "Mariposa",
+      "pista": "Tiene alas de colores y vuela en primavera",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "O",
+      "definicion": "Animal que da lana y suele vivir en grandes rebaños.",
+      "respuesta": "Oveja",
+      "pista": "Su leche se usa para hacer quesos como el manchego",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "P",
+      "definicion": "Se dice de este animal, que es el mejor amigo del hombre.",
+      "respuesta": "Perro",
+      "pista": "Animal que ladra y mueve la cola",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "R",
+      "definicion": "Animal pequeño que suele esconderse y al que le gusta el queso.",
+      "respuesta": "Ratón",
+      "pista": "Lo persiguen los gatos y a veces entra en la cocina",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "S",
+      "definicion": "Reptil sin patas que se arrastra por tierra o agua.",
+      "respuesta": "Serpiente",
+      "pista": "Se mueve en forma de “ese” y puede morder",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "V",
+      "definicion": "Animal que vive en el campo, da leche y es conocido por sus cuernos.",
+      "respuesta": "Vaca",
+      "pista": "Dice muuu y algunos son marrones otros tienen manchas",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "Y",
+      "definicion": "Hembra del caballo.",
+      "respuesta": "Yegua",
+      "pista": "Vive en el campo, es la mamá del potro",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "Z",
+      "definicion": "Animal salvaje de color rojizo que vive en el bosque y es conocido por su astucia.",
+      "respuesta": "Zorro",
+      "pista": "Sale en cuentos como el de 'El Principito' y caza de noche",
+      "dificultad": "Media"
+    }
+  ]
 }
+

@@ -1,54 +1,110 @@
 {
-    "preguntas": [
-        {
-            "letra": "B",
-            "definicion": "Provincia del sur de Extremadura",
-            "respuesta": "Badajoz"
-        },
-        {
-            "letra": "C",
-            "definicion": "Provincia del norte de Extremadura",
-            "respuesta": "Cáceres"
-        },
-        {
-            "letra": "G",
-            "definicion": "Localidad cacereña donde se encuentra la Virgen Patrona de Extremadura",
-            "respuesta": "Guadalupe"
-        },
-        {
-            "letra": "J",
-            "definicion": "Producto Extremeño típico derivado del cerdo",
-            "respuesta": "Jamón"
-        },
-        {
-            "letra": "M",
-            "definicion": "Comida típica extremeña hecha con pan, agua y ajo que se cocina en la candela en el caldero",
-            "respuesta": "Migas"
-        },
-        {
-            "letra": "P",
-            "definicion": "País que hace frontera con Extremadura",
-            "respuesta": "Portugal"
-        },
-        {
-            "letra": "R",
-            "definicion": "Jota Cacereña conocida en toda extremadura",
-            "respuesta": "Redoble"
-        },
-        {
-            "letra": "U",
-            "definicion": "Fruto de la viña, planta típica de la comarca de barros y se utiliza para hacer el cava extremeño",
-            "respuesta": "Uva"
-        },
-        {
-            "letra": "X",
-            "definicion": "Nombre de nuestra comunidad autónoma",
-            "respuesta": "Extremadura"
-        },
-        {
-            "letra": "Z",
-            "definicion": "Ensalada muy popular en extremadura, que lleva tomates y pimientos asados, también aceite y ajo",
-            "respuesta": "Zorongollo"
-        }
-    ]
+  "preguntas": [
+    {
+      "letra": "B",
+      "definicion": "Provincia del sur de Extremadura.",
+      "respuesta": "Badajoz",
+      "pista": "Está junto a Portugal, es muy extensa",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "C",
+      "definicion": "Provincia del norte de Extremadura.",
+      "respuesta": "Cáceres",
+      "pista": "En ella está Trujillo, Guadalupe y Plasencia",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "E",
+      "definicion": "Nombre de nuestra comunidad autónoma.",
+      "respuesta": "Extremadura",
+      "pista": "Está formada por Cáceres y Badajoz",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "G",
+      "definicion": "Pueblo conocido por su monasterio y la Virgen patrona de Extremadura.",
+      "respuesta": "Guadalupe",
+      "pista": "Lugar de peregrinación muy importante en Cáceres",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "J",
+      "definicion": "Producto extremeño típico hecho con carne curada del cerdo.",
+      "respuesta": "Jamón",
+      "pista": "Se come en lonchas y se cuelga en secaderos",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "M",
+      "definicion": "Plato tradicional hecho con pan, aceite, agua y ajo, típico de días fríos en el campo.",
+      "respuesta": "Migas",
+      "pista": "Se hace al fuego y puede llevar chorizo o panceta",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "N",
+      "definicion": "Ciudad del norte de Extremadura conocida por su carnaval y su papel agrícola en la comarca del Campo Arañuelo.",
+      "respuesta": "Navalmoral",
+      "pista": "Está cerca de la Vera y tiene una central nuclear próxima",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "P",
+      "definicion": "País que hace frontera con Extremadura.",
+      "respuesta": "Portugal",
+      "pista": "Se habla portugués y se come bacalao",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "Q",
+      "definicion": "Alimento tradicional extremeño, que puede ser de la Serena, del Casar o de los Ibores.",
+      "respuesta": "Queso",
+      "pista": "Se hace con leche y se madura en secaderos",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "R",
+      "definicion": "Baile típico extremeño de ritmo rápido y con palmas.",
+      "respuesta": "Redoble",
+      "pista": "Se baila en fiestas, con trajes regionales",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "S",
+      "definicion": "Fiesta tradicional donde se sueltan toros por las calles, en pueblos como Coria.",
+      "respuesta": "San Juan",
+      "pista": "Fiesta que se celebra en junio, con hogueras y fuegos artificiales.",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "T",
+      "definicion": "Queso muy cremoso, elaborado con leche de oveja en el norte de Extremadura.",
+      "respuesta": "Torta del Casar",
+      "pista": "Se puede untar en pan y tiene sabor fuerte",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "U",
+      "definicion": "Fruto de la viña, planta típica de la comarca de Barros y se utiliza para hacer el cava extremeño.",
+      "respuesta": "Uva",
+      "pista": "Se toma en Nochevieja, va en racimos",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "V",
+      "definicion": "Sistema montañoso declarado Geoparque por la UNESCO, donde se encuentra Guadalupe.",
+      "respuesta": "Villuercas",
+      "pista": "Sierra con relieve apalachense, al sureste de Cáceres",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "Z",
+      "definicion": "Ensalada muy popular en Extremadura, que lleva tomates y pimientos asados, también aceite y ajo.",
+      "respuesta": "Zorongollo",
+      "pista": "Plato frío con verduras asadas y aliño",
+      "dificultad": "Difícil"
+    }
+  ]
 }
+

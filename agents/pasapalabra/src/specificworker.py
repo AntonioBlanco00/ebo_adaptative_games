@@ -36,6 +36,8 @@ import pygame
 from pynput import keyboard
 import threading
 import random
+import csv
+from collections import defaultdict
 
 
 sys.path.append('/opt/robocomp/lib')
@@ -50,6 +52,7 @@ from pydsr import *
 # import librobocomp_innermodel
 
 class SpecificWorker(GenericWorker):
+    update_ui_signal = Signal()
     def __init__(self, proxy_map, startup_check=False):
         super(SpecificWorker, self).__init__(proxy_map)
         self.Period = 2000
@@ -86,6 +89,8 @@ class SpecificWorker(GenericWorker):
         self.letras = []
         self.preguntas = []
         self.respuestas = []
+        self.pistas = []
+        self.dificultades = []
         self.aciertos = 0
         self.fallos = 0
         self.pasadas = 0
@@ -98,21 +103,42 @@ class SpecificWorker(GenericWorker):
         self.elapsed_time = None
         self.rosco = ""
         self.bd = ""
+        self.NUM_LEDS = 54
+        self.racha_aciertos = 0
+        self.umbral_tiempo_pista = 15
+        self.pistas_usadas = 0
+
+        self.ROSCOS_POSIBLES = [
+            "Animales",
+            "Antonimos",
+            "Comida",
+            "Extremadura",
+            "Partes_de_la_casa",
+        ]
 
         ########## DEFINICIÓN DEL DATAFRAME QUE ALMACENA LOS DATOS ##########
-        self.df = pd.DataFrame(columns=["Nombre", "Rosco", "Aciertos", "Fallos", "Pasadas", "Fecha", "Hora", "Tiempo transcurrido (min)",
-                                        "Tiempo transcurrido (seg)", "Tiempo de respuesta medio (seg)"])
+        self.df = pd.DataFrame(
+            columns=["Nombre", "Nivel actual", "Rosco", "Aciertos", "Fallos", "Pasadas", "Nota partida", "Fecha",
+                     "Hora", "Tiempo transcurrido (min)", "Tiempo transcurrido (seg)",
+                     "Tiempo de respuesta medio (seg)"])
         self.resp = ""
         self.running = False
         self.boton = False
         self.check = ""
         self.letra_actual = ""
         self.pregunta_actual = ""
+        self.pista_actual = ""
+        self.dificultad_actual = ""
         self.start_question_time = 0
         self.end_question_time = 0
         self.response_time = 0
         self.responses_times = []
         self.media = 0
+        self.nota = ""
+        self.nota_partida = 0
+        self.rc = ""
+
+        self.archivo_csv = "../../users_info.csv"
 
         QApplication.processEvents()
 
@@ -155,6 +181,11 @@ class SpecificWorker(GenericWorker):
             "¡Pasapalabra, ahora es el turno de la siguiente!"
         ]
 
+        self.update_ui_signal.connect(self.on_update_ui)
+
+        # print("INICIANDO TEST DE INICIO JUEGO")
+        # self.Pasapalabra_StartGame()
+
     def elegir_respuesta(self, bateria):
         return random.choice(bateria)
 
@@ -176,23 +207,100 @@ class SpecificWorker(GenericWorker):
         self.ledarray_proxy.setLEDArray(pixel_array)
 
     ########## OBTIENE LOS ROSCOS ##########
-    def archivo(self, archivo_json):
-        """Cargar los datos desde el archivo JSON"""
-        # Donde json es una string con el nombre del json, ruta a futuro.
-        self.bd = archivo_json
-        with open(self.bd, 'r', encoding='utf-8') as json_file:
-            self.datos = json.load(json_file)["preguntas"] # Acceder a la clave 'preguntas'
+    # Para llamar a la función:
+    # cupos = {"Fácil": 3, "Media": 4, "Difícil": 2}
+    # self.archivo("roscos/animales.json", cupos)
 
-        # Iterar sobre las preguntas y almacenar las letras, preguntas y respuestas
-        for pregunta in self.datos:
-            self.letras.append(pregunta['letra'])  # Guardar las letras
-            self.preguntas.append(pregunta['definicion'])  # Guardar las definiciones
-            self.respuestas.append(pregunta['respuesta'])  # Guardar las respuestas
+    def archivo(self, ruta_json: str,
+                cupos: dict[str, int] | None = None,
+                seed: int | None = None) -> None:
+
+        if seed is not None:
+            random.seed(seed)
+
+        # 1. Leer el fichero
+        with open(ruta_json, encoding="utf-8") as fh:
+            todas = json.load(fh)["preguntas"]
+
+        # 2. Filtrar por cupos
+        if cupos:
+            bolsas = defaultdict(list)
+            for q in todas:
+                bolsas[q["dificultad"]].append(q)
+
+            seleccion = []
+            for nivel, n_pedidas in cupos.items():
+                disp = bolsas.get(nivel, [])
+                if not disp:
+                    console.print(f"[yellow]⚠ No hay preguntas “{nivel}”.")
+                    continue
+                n = min(n_pedidas, len(disp))
+                if n < n_pedidas:
+                    console.print(f"[yellow]⚠ Solo hay {n} preguntas “{nivel}”, no {n_pedidas}.")
+                seleccion.extend(random.sample(disp, n))
+        else:
+            seleccion = todas[:]  # copia completa
+
+        # 2.bis ▸ Ordenar alfabéticamente por la letra
+        seleccion.sort(key=lambda q: q["letra"].lower())
+
+        # 3. Resetear contenedores
+        self.letras.clear();
+        self.preguntas.clear();
+        self.respuestas.clear()
+        self.pistas.clear();
+        self.dificultades.clear()
+
+        # 4. Volcar las preguntas seleccionadas y ordenadas
+        for q in seleccion:
+            self.letras.append(q["letra"])
+            self.preguntas.append(q["definicion"])
+            self.respuestas.append(q["respuesta"])
+            self.pistas.append(q.get("pista", ""))
+            self.dificultades.append(q.get("dificultad", ""))
+
+        # TESTEAR QUE FUNCIONA
+        print(f"Letras: {self.letras}")
+        print(f"Preguntas: {self.preguntas}")
+        print(f"Respuestas: {self.respuestas}")
+        print(f"Pistas: {self.pistas}")
+        print(f"Dificultades: {self.dificultades}")
+
+    ########## REALIZA EL AJSUTE DE DIFICULTAD SEGUN EL NIVEL DEL USUARIO, GENERA EL CUPOS QUE MANDAR A SELF.ARCHIVO ##########
+    def cupos_por_nivel(self, nivel: int) -> dict[str, int]:
+        # (fácil, media, difícil) para cada nivel 1-21
+        tabla = [
+            (5, 0, 0),  # 1  Getting Started
+            (5, 1, 0),  # 2  First Steps
+            (5, 2, 0),  # 3  Gentle Learning
+            (5, 3, 0),  # 4  First Challenge
+            (5, 4, 0),  # 5  Gradual Progression
+            (5, 5, 0),  # 6  Base Level
+            (5, 3, 1),  # 7  Basic Competence
+            (5, 4, 1),  # 8  Moderate Progress
+            (5, 3, 2),  # 9  Strengthening
+            (5, 4, 2),  # 10 Consolidation
+            (5, 3, 3),  # 11 Initial Breakthrough
+            (5, 4, 3),  # 12 Proficiency
+            (4, 5, 3),  # 13 Expertise
+            (4, 3, 4),  # 14 Mastery
+            (3, 5, 3),  # 15 Excellence
+            (4, 4, 4),  # 16 Supreme
+            (5, 3, 5),  # 17 Higher Challenge
+            (4, 5, 4),  # 18 Mythical Level
+            (5, 5, 4),  # 19 Epic
+            (5, 4, 5),  # 20 Legendary
+            (5, 5, 5)  # 21 Legend
+        ]
+
+        if not 1 <= nivel <= 21:
+            raise ValueError("El nivel debe estar entre 1 y 21 inclusive.")
+
+        faciles, medias, dificiles = tabla[nivel - 1]
+        return {"Fácil": faciles, "Media": medias, "Difícil": dificiles}
 
     ########## PROCESO DEL JUEGO ##########
     def juego(self):
-        json_elegido = "roscos/" + self.rosco  + ".json"
-        self.archivo(json_elegido)
         print("Comienzo de juego")
         self.start_time = time.time()
         letras_restantes = self.letras.copy()
@@ -206,26 +314,36 @@ class SpecificWorker(GenericWorker):
 
                     self.resp = ""
                     indice = self.letras.index(letra)
-                    if self.respuestas[indice].startswith(letra):
-                        self.letra_actual = f"Comienza con la letra:{letra}"
-                        self.speech_proxy.say(f"Comienza con la letra:{letra}", False)
-                        print(f'Con la letra: {letra}')
-                    else:
-                        self.letra_actual = f"Contiene la letra:{letra}"
-                        self.speech_proxy.say(f"Contiene la letra:{letra}", False)
-                        print(f'Contiene la letra: {letra}')
-
-                    self.speech_proxy.say(f"{self.preguntas[indice]}", False)
-                    print(self.preguntas[indice])
                     respuesta_correcta = self.respuestas[indice]
                     self.pregunta_actual = self.preguntas[indice]
+                    self.letra_actual = f"Comienza con la letra:{letra}" if self.respuestas[indice].startswith(
+                        letra) else f"Contiene la letra:{letra}"
+                    self.pista_actual = self.pistas[indice]
+
+                    if self.racha_aciertos == 0 and self.fallos >= (2 + self.pistas_usadas):
+                        self.speech_proxy.say(f"{self.letra_actual}, {self.pregunta_actual}. Aquí va una pista: {self.pista_actual}", False)
+                        self.pistas_usadas += 1
+                    else:
+                        self.speech_proxy.say(f"{self.letra_actual}, {self.pregunta_actual}", False)
+
                     self.terminaHablar()
+
                     self.start_question_time = time.time()
+                    mostrar_pista_tiempo = False
+
                     self.ui.respuesta.clear()
                     self.ui.respuesta.insertPlainText(respuesta_correcta)
                     self.ui.show()
+
                     while self.resp == "":
                         QApplication.processEvents()
+                        tiempo_actual = time.time() - self.start_question_time
+                        # print(f"Tiempo: {tiempo_actual}")
+
+                        # Pista automática por tiempo excesivo
+                        if not mostrar_pista_tiempo and tiempo_actual >= self.umbral_tiempo_pista:
+                            self.speech_proxy.say(f"Te doy una pista: {self.pista_actual}", False)
+                            mostrar_pista_tiempo = True
 
                     if self.resp == "pasapalabra":
                         self.speech_proxy.say(self.elegir_respuesta(self.bateria_pasapalabra), False)
@@ -239,6 +357,7 @@ class SpecificWorker(GenericWorker):
                         self.pasadas += 1
                         self.emotionalmotor_proxy.expressJoy()
                         letras_restantes.remove(letra)
+                        self.racha_aciertos = 0
                     elif self.resp == "si":
                         self.speech_proxy.say(self.elegir_respuesta(self.bateria_aciertos), False)
                         print("¡Respuesta correcta!")
@@ -250,6 +369,7 @@ class SpecificWorker(GenericWorker):
                         self.aciertos += 1
                         self.emotionalmotor_proxy.expressJoy()
                         letras_restantes.remove(letra)  # Eliminar la letra de letras_restantes si es correcta
+                        self.racha_aciertos += 1
                     else:
                         self.speech_proxy.say(f"{self.elegir_respuesta(self.bateria_fallos)} La respuesta correcta era {respuesta_correcta}", False)
                         print(f"Respuesta incorrecta! La respuesta es {respuesta_correcta}")
@@ -261,7 +381,9 @@ class SpecificWorker(GenericWorker):
                         self.fallos += 1
                         self.emotionalmotor_proxy.expressJoy()
                         letras_restantes.remove(letra)  # Eliminar la letra de letras_restantes si es correcta
+                        self.racha_aciertos = 0
 
+                    self.ajustar_nota_actual(self.resp, self.dificultades[indice])
                     self.end_question_time = time.time()
                     self.cerrar_ui(1)
                     self.response_time = self.end_question_time - self.start_question_time
@@ -275,26 +397,42 @@ class SpecificWorker(GenericWorker):
                     if not self.running:
                         break
 
-                    self.resp=""
+                    self.resp = ""
                     indice = self.letras.index(letra)
-                    if self.respuestas[indice].startswith(letra):
-                        self.speech_proxy.say(f"Comienza con la letra:{letra}", False)
-                        print(f'Con la letra: {letra}')
-                    else:
-                        self.speech_proxy.say(f"Contiene la letra:{letra}", False)
-                        print(f'Contiene la letra: {letra}')
-
-                    pregunta = self.preguntas[indice]
                     respuesta_correcta = self.respuestas[indice]
-                    self.speech_proxy.say(f"{pregunta}", False)
-                    print(f'Pregunta: {pregunta}')
+                    self.pregunta_actual = self.preguntas[indice]
+                    self.letra_actual = f"Comienza con la letra:{letra}" if self.respuestas[indice].startswith(
+                        letra) else f"Contiene la letra:{letra}"
+                    self.pista_actual = self.pistas[indice]
+
+                    self.speech_proxy.say(self.letra_actual, False)
+                    self.speech_proxy.say(self.pregunta_actual, False)
+
+                    # Control dinámico para decir pistas por fallos acumulados (en pasadas)
+                    if self.racha_aciertos == 0 and self.fallos >= (2 + self.pistas_usadas):
+                        self.speech_proxy.say(f"{self.letra_actual}, {self.pregunta_actual}. Aquí va una pista: {self.pista_actual}", False)
+                        self.pistas_usadas += 1
+                    else:
+                        self.speech_proxy.say(f"{self.letra_actual}, {self.pregunta_actual}", False)
+
                     self.terminaHablar()
+
+                    self.start_question_time = time.time()
+                    mostrar_pista_tiempo = False
+
                     self.ui.respuesta.clear()
                     self.ui.respuesta.insertPlainText(respuesta_correcta)
                     self.ui.show()
-                    self.start_question_time = time.time()
+
                     while self.resp == "":
                         QApplication.processEvents()
+                        tiempo_actual = time.time() - self.start_question_time
+                        # print(f"Tiempo: {tiempo_actual}")
+
+                        # Pista automática por tiempo excesivo
+                        if not mostrar_pista_tiempo and tiempo_actual >= self.umbral_tiempo_pista:
+                            self.speech_proxy.say(f"Te doy una pista: {self.pista_actual}", False)
+                            mostrar_pista_tiempo = True
 
                     if self.resp == "pasapalabra":
                         self.speech_proxy.say(f"Has pasado esta letra nuevamente", False)
@@ -306,6 +444,8 @@ class SpecificWorker(GenericWorker):
                         sleep(1)
                         self.letras_pasadas.remove(letra)
                         self.emotionalmotor_proxy.expressJoy()
+                        self.racha_aciertos = 0
+
                     elif self.resp == "si":
                         self.speech_proxy.say(self.elegir_respuesta(self.bateria_aciertos), False)
                         print("¡Respuesta correcta!")
@@ -318,6 +458,8 @@ class SpecificWorker(GenericWorker):
                         self.pasadas -= 1
                         self.emotionalmotor_proxy.expressJoy()
                         self.letras_pasadas.remove(letra)  # Eliminar la letra de letras_pasadas si es incorrecta
+                        self.racha_aciertos += 1
+
                     else:
                         self.speech_proxy.say(f"{self.elegir_respuesta(self.bateria_fallos)} La respuesta correcta era {respuesta_correcta}", False)
                         print(f"Respuesta incorrecta! La respuesta es {respuesta_correcta}")
@@ -330,7 +472,9 @@ class SpecificWorker(GenericWorker):
                         self.pasadas -= 1
                         self.emotionalmotor_proxy.expressJoy()
                         self.letras_pasadas.remove(letra)  # Eliminar la letra de letras_pasadas si es incorrecta
+                        self.racha_aciertos = 0
 
+                    self.ajustar_nota_actual(self.resp, self.dificultades[indice])
                     self.end_question_time = time.time()
                     self.cerrar_ui(1)
                     self.response_time = self.end_question_time - self.start_question_time
@@ -340,20 +484,85 @@ class SpecificWorker(GenericWorker):
         self.elapsed_time = self.end_time - self.start_time  # Tiempo en segundos
         self.media = sum(self.responses_times) / len(self.responses_times)
         self.running = False
+        R = self.calc_nota_final()
         # Resultados finales
         self.speech_proxy.say("Fin del juego. ¡Lo has hecho genial!:", False)
         self.agregar_resultados(self.nombre, self.rosco, self.aciertos, self.fallos, self.pasadas, self.fecha,
-                                self.hora, (self.elapsed_time//60), (self.elapsed_time%60), self.media)
+                                self.hora, (self.elapsed_time//60), (self.elapsed_time%60), self.media, R)
         self.guardar_resultados()
+        self.send_to_csv_manager(self.ajuste_nivel(R))
         # REINICIAR TODAS LAS VARIABLES
         self.reiniciar_variables()
         self.gestorsg_proxy.LanzarApp()
+
+    def ajustar_nota_actual(self, acierto, dificultad):
+        if acierto == "si" and dificultad == "Fácil":
+            self.nota_partida = self.nota_partida + 5
+        if acierto == "si" and dificultad == "Media":
+            self.nota_partida = self.nota_partida + 10
+        if acierto == "si" and dificultad == "Difícil":
+            self.nota_partida = self.nota_partida + 15
+        if acierto == "no" and dificultad == "Media":
+            self.nota_partida = self.nota_partida - 2
+        if acierto == "no" and dificultad == "Difícil":
+            self.nota_partida = self.nota_partida - 5
+        else:
+            pass
+
+    def calc_nota_final(self): # calcular esto y pasarlo por ajsute_nivel
+        n_facil = self.dificultades.count("Fácil")
+        n_media = self.dificultades.count("Media")
+        n_dificil = self.dificultades.count("Difícil")
+        nota_max = n_facil * 5 + n_media * 10 + n_dificil * 15
+        R = self.nota_partida / nota_max
+        print("Nota obtenida en la partida: ", R)
+        return R
+
+    def ajuste_nivel(self, R: float) -> int:
+        if R == 1.0:
+            return +3
+        elif 0.85 <= R < 1.0:
+            return +2
+        elif 0.625 <= R < 0.85:
+            return +1
+        elif 0.40 <= R < 0.625:
+            return 0  # mantener nivel
+        elif 0.15 <= R < 0.40:
+            return -1
+        elif 0.0 < R < 0.15:
+            return -2
+        else:  # R == 0
+            return -3
+
+    def send_to_csv_manager(self, R):
+        node = self.g.get_node("CSV Manager")
+        nota_final = float(self.nota) + R
+
+        node.attrs["nombre"].value = self.nombre
+        node.attrs["pp_nota"].value = str(nota_final)
+        node.attrs["pp_rc"].value = self.rc
+        node.attrs["actualizar_info"].value = True
+
+        self.vaciar_pp_node()
+        self.g.update_node(node)
+
+    def vaciar_pp_node(self):
+        node = self.g.get_node("Pasapalabra")
+
+        node.attrs["nombre"].value = ""
+        node.attrs["racha"].value = ""
+        node.attrs["rosco"].value = ""
+        node.attrs["segunda_vuelta"].value = False
+
+        self.g.update_node(node)
 
     def reiniciar_variables(self):
         self.datos = []
         self.letras = []
         self.preguntas = []
         self.respuestas = []
+        self.pistas = []
+        self.dificultades = []
         self.aciertos = 0
         self.fallos = 0
         self.pasadas = 0
@@ -372,14 +581,25 @@ class SpecificWorker(GenericWorker):
         self.check = ""
         self.letra_actual = ""
         self.pregunta_actual = ""
+        self.pista_actual = ""
+        self.dificultad_actual = ""
         self.start_question_time = 0
         self.end_question_time = 0
         self.response_time = 0
         self.responses_times = []
         self.media = 0
+        self.nota = ""
+        self.nota_partida = 0
+        self.rc = ""
+        self.racha_aciertos = 0
+        self.umbral_tiempo_pista = 15
+        self.pistas_usadas = 0
 
-        self.df = pd.DataFrame(columns=["Nombre", "Rosco", "Aciertos", "Fallos", "Pasadas", "Fecha", "Hora", "Tiempo transcurrido (min)",
-                                        "Tiempo transcurrido (seg)", "Tiempo de respuesta medio (seg)"])
+        self.df = pd.DataFrame(
+            columns=["Nombre", "Nivel actual", "Rosco", "Aciertos", "Fallos", "Pasadas", "Nota partida", "Fecha",
+                     "Hora", "Tiempo transcurrido (min)", "Tiempo transcurrido (seg)",
+                     "Tiempo de respuesta medio (seg)"])
+
         print("Variable self.df reiniciada para la próxima partida.")
 
     ########## INTRODUCCIÓN AL JUEGO ##########
@@ -435,14 +655,18 @@ class SpecificWorker(GenericWorker):
 
     ########## FUNCIÓN QUE AGREGA LOS RESULTADOS AL DATAFRAME ##########
     def agregar_resultados(self, nombre,dificultad, aciertos, fallos, pasadas, fecha, hora,
-                           tiempo_transcurrido_min, tiempo_transcurrido_seg, tiempo_respuesta_medio):
+                           tiempo_transcurrido_min, tiempo_transcurrido_seg, tiempo_respuesta_medio, R):
+
+        nota_partida = R*10
         # Crea un diccionario con los datos nuevos
         nuevo_resultado = {
             "Nombre": nombre,
-            "Rosco" : dificultad,
+            "Nivel actual": self.nota,
+            "Rosco": dificultad,
             "Aciertos": aciertos,
             "Fallos": fallos,
             "Pasadas": pasadas,
+            "Nota partida": nota_partida,
             "Fecha": fecha,
             "Hora": hora,
             "Tiempo transcurrido (min)": tiempo_transcurrido_min,
@@ -557,7 +781,6 @@ class SpecificWorker(GenericWorker):
     ##########################################################################################
 
     def therapist_ui (self):
-        # self.start_listener_thread()
         self.running = True
 
         #Cargar interfaz
@@ -576,12 +799,15 @@ class SpecificWorker(GenericWorker):
 
         self.configure_combobox(ui, "roscos")
         ui.confirmar_button.clicked.connect(self.therapist)
+        ui.confirmar_button_2.clicked.connect(self.therapist_exist)
 
-        ui.ayuda.hide()
-        ui.ayuda_button.clicked.connect(self.ayuda_clicked2)
+        # ui.ayuda.hide()
+        # ui.ayuda_button.clicked.connect(self.ayuda_clicked2)
+        #
+        # ui.back_button.clicked.connect(self.back_clicked2)
 
-        ui.back_button.clicked.connect(self.back_clicked2)
-        
+        self.cargarUsuarios(ui, self.archivo_csv)
+
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
             self.ui_numbers = {}
@@ -590,19 +816,38 @@ class SpecificWorker(GenericWorker):
         ui.installEventFilter(self) 
         return ui
 
-    def therapist(self):
+    def cargarUsuarios(self, ui, archivo_csv):
+        opciones = ["Seleccionar usuario..."]
+        try:
+            with open(archivo_csv, newline='', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile, delimiter=';')
+                for row in reader:
+                    nombre = row['nombre'].strip()
+                    residencia = row['residencia'].strip() if row['residencia'].strip() else "Desconocida"
+                    opciones.append(f"{nombre} - {residencia}")
+        except Exception as e:
+            print(f"Error al leer el CSV: {e}")
+        ui.comboBox_user.addItems(opciones)
+
+    def therapist(self): # primera partida
+        cupos = self.cupos_por_nivel(round(10))
         # Obtiene los valores ingresados en los campos
         self.nombre = self.ui2.usuario.toPlainText()
         self.rosco = self.ui2.comboBox.currentText()
+        self.nota = "6"
 
         # Validaciones simples
         if not self.nombre:
             print("Por favor ingresa un nombre de usuario.")
             return
-        if not self.rosco or self.rosco == "Seleccionar rosco...":
+        if self.rosco == "Rosco automático":
+            self.rosco = self._rosco_aleatorio_no_repetido()
+
+        if not self.rosco:
             print("Por favor selecciona un rosco.")
             return
 
+        self.archivo(f"roscos/{self.rosco}.json", cupos)
         # Muestra los valores en consola
         print(f"Usuario: {self.nombre}")
         print(f"Rosco: {self.rosco}")
@@ -615,11 +860,90 @@ class SpecificWorker(GenericWorker):
         self.ui2.usuario.clear()
         self.introduccion()
 
+    def _rosco_aleatorio_no_repetido(self):
+        """Devuelve un rosco que aún no esté en self.rc y lo marca como completado."""
+        # 1) normalizamos lo ya completado
+        if isinstance(self.rc, str):
+            completados = {r.strip().lower() for r in self.rc.split(",") if r.strip()}
+        else:  # lista / set
+            completados = {os.path.splitext(r)[0].strip().lower() for r in self.rc}
+
+        # 2) calculamos disponibles
+        disponibles = [
+            r for r in self.ROSCOS_POSIBLES
+            if os.path.splitext(r)[0].lower() not in completados
+        ]
+        if not disponibles:  # todos hechos → se permiten repetidos
+            disponibles = self.ROSCOS_POSIBLES
+
+        # 3) seleccionamos
+        rosco_elegido = random.choice(disponibles)
+
+        # 4) ACTUALIZAMOS self.rc  (solo el nombre sin extensión, en minúsculas)
+        sin_extension = os.path.splitext(rosco_elegido)[0].lower()
+
+        if isinstance(self.rc, str):
+            # si estaba vacía, no añadimos coma inicial
+            self.rc = ", ".join(filter(None, [self.rc.strip(), sin_extension]))
+        else:  # lista / set
+            self.rc.append(sin_extension) if isinstance(self.rc, list) else self.rc.add(sin_extension)
+
+        return rosco_elegido
+
+    ######## LOGICA USUARIO EXISTENTE, CARGA DE DATOS E INICIO DE JUEGO ##################
+    def therapist_exist(self):
+        self.select_user()
+        self.leerDatos()
+        if self.nota != "":
+            cupos = self.cupos_por_nivel(round(float(self.nota)))
+        else:
+            self.nota = "6"
+            cupos = self.cupos_por_nivel(round(float(self.nota)))
+
+        self.rosco = self.ui2.comboBox.currentText()
+        print(self.rosco)
+
+        if self.rosco == "Rosco automático":
+            self.rosco = self._rosco_aleatorio_no_repetido()
+
+        self.archivo(f"roscos/{self.rosco}.json", cupos)
+        print("Valores confirmados. Juego listo para comenzar.")
+        self.boton = True
+        self.running = True
+        self.sounds["click"].play()
+        self.cerrar_ui(2)
+        self.ui2.usuario.clear()
+        self.introduccion()
+
+    def select_user(self):
+        print("Usuario seleccionado")
+        nombre = self.ui2.comboBox_user.currentText()
+
+        if not nombre or nombre == "Seleccionar usuario...":
+            print("Por favor selecciona un usuario.")
+            return
+
+        self.nombre_jugador = nombre.split(" - ")[0].strip()
+        node = self.g.get_node("CSV Manager")
+        node.attrs["nombre"].value = self.nombre_jugador
+        self.g.update_node(node)
+
+    def leerDatos(self):
+        self.actualizar_datos()
+        time.sleep(0.5)
+        node = self.g.get_node("CSV Manager")
+
+        self.nombre = node.attrs["nombre"].value
+        self.nota = node.attrs["pp_nota"].value
+        self.rc = node.attrs["pp_rc"].value
+
+    #########################################################################################
+
     def configure_combobox(self, ui, folder_path):
         # Acceder al QComboBox por su nombre de objeto
         combobox = ui.findChild(QtWidgets.QComboBox, "comboBox")
         if combobox:
-            combobox.addItem("Seleccionar rosco...")
+            combobox.addItem("Rosco automático")
             # Obtener la lista de archivos en la carpeta
             try:
                 archivos = [
@@ -760,8 +1084,21 @@ class SpecificWorker(GenericWorker):
 
     ####################################################################################################################################
 
+    def actualizar_datos(self):
+        # Manda la señal para que settings adapter haga la adaptación inicial del juego.
+        node = self.g.get_node("Settings Adapter")
+        node.attrs["set_info"].value = True
+        self.g.update_node(node)
+
     @QtCore.Slot()
     def compute(self):
+        # TESTEO FUNCIONES
+        # input("Pulsa Enter para probar una generación con 2 preguntas de cada dificultad")
+        # cupos = {"Fácil": 1, "Media": 1, "Difícil": 1}
+        # self.archivo("roscos/Animales.json", cupos)
+
+        # cupos = self.cupos_por_nivel(10)  # {'Fácil': 5, 'Media': 4, 'Difícil': 3}
+        # self.archivo("roscos/Animales.json", cupos)
 
         return True
 
@@ -781,14 +1118,22 @@ class SpecificWorker(GenericWorker):
     # IMPLEMENTATION of StartGame method from Pasapalabra interface
     #
     def Pasapalabra_StartGame(self):
-        self.boton = False
-        while not self.boton:
-            self.boton = True
-            self.centrar_ventana(self.ui2)
-            self.ui2.show()
-            QApplication.processEvents()
-            sleep(1)
-        print("Juego terminado o ventana cerrada")
+        print("INICIANDO PASAPALABRA")
+        self.ui2 = self.therapist_ui()
+        self.update_ui_signal.emit()
+
+    @Slot()
+    def on_update_ui(self):
+        # Este código se ejecutará en el hilo principal
+        if not self.ui:
+            print("Error: la interfaz de usuario no se ha cargado correctamente.")
+            return
+
+        self.ui2 = self.therapist_ui()
+        self.centrar_ventana(self.ui2)
+        self.ui2.raise_()
+        self.ui2.show()
+        QApplication.processEvents()
 
     def centrar_ventana(self, ventana):
         # Obtener la geometría de la pantalla

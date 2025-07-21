@@ -36,7 +36,6 @@ import pygame
 import time
 import pandas as pd
 from datetime import datetime
-import csv
 import math
 import json
 import csv

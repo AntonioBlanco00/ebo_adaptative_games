@@ -30,6 +30,11 @@ nombre6="Storytelling"
 ruta7="$ruta/agents/simonSay"
 nombre7="SimonSay"
 
+ruta8="$ruta/agents/pasapalabra"
+nombre8="Pasapalabra"
+
+ruta9="$ruta/agents/ebo_app"
+nombre9="APP Terapeuta"
 
 # Función para cambiar el nombre de la pestaña
 function cambiar_nombre_pestania() {
@@ -73,5 +78,6 @@ abrir_nueva_pestania "$ruta4" "$nombre4" "src/ebo_gpt.py etc/config"
 abrir_nueva_pestania "$ruta5" "$nombre5" "src/settings_adapter.py etc/config"
 abrir_nueva_pestania "$ruta6" "$nombre6" "src/storytelling.py etc/config"
 abrir_nueva_pestania "$ruta7" "$nombre7" "src/simonSay.py etc/config"
-
+abrir_nueva_pestania "$ruta8" "$nombre8" "src/pasapalabra.py etc/config"
+abrir_nueva_pestania "$ruta9" "$nombre9" "src/ebo_app.py etc/config"
 

@@ -1,54 +1,110 @@
 {
-    "preguntas": [
-        {
-            "letra": "A",
-            "definicion": "Granos blancos y pequeños que se comen en la paella o a la cubana",
-            "respuesta": "Arroz"
-        },
-        {
-            "letra": "D",
-            "definicion": "Primera comida del día, la hacemos por la mañana",
-            "respuesta": "Desayuno"
-        },
-        {
-            "letra": "E",
-            "definicion": "Lleva lechuga y tomate. Se aliña con vinagre, aceite y sal.",
-            "respuesta": "Ensalada"
-        },
-        {
-            "letra": "F",
-            "definicion": "Fruta roja que se come en primavera. Se puede comer con leche o con nata",
-            "respuesta": "Fresa"
-        },
-        {
-            "letra": "H",
-            "definicion": "Lo pone la gallina y nos lo podemos comer frito o cocido",
-            "respuesta": "Huevo"
-        },
-        {
-            "letra": "J",
-            "definicion": "Pata trasera del cerdo. Se come en España.",
-            "respuesta": "Jamón"
-        },
-        {
-            "letra": "N",
-            "definicion": "Fruto con el que se hace un zumo muy jugoso. También es un color",
-            "respuesta": "Naranja"
-        },
-        {
-            "letra": "S",
-            "definicion": "Fruta grande y redonda. Roja por dentro y con pepitas negras. La comemos en verano.",
-            "respuesta": "Sandía"
-        },
-        {
-            "letra": "T",
-            "definicion": "Se hace batiendo huevos y con un poco de sal",
-            "respuesta": "Tortilla"
-        },
-        {
-            "letra": "U",
-            "definicion": "Fruta con la que se produce el vino",
-            "respuesta": "Uva"
-        }
-    ]
+  "preguntas": [
+    {
+      "letra": "A",
+      "definicion": "Granos blancos y pequeños que usamos para hacer paella, arroz a la cubana...",
+      "respuesta": "Arroz",
+      "pista": "Lo que se le echa al agua para hacer paella",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "C",
+      "definicion": "Dulce frito alargado, típico en desayunos y fiestas populares, que se suele mojar en chocolate.",
+      "respuesta": "Churros",
+      "pista": "Se venden en churrerías y se comen con chocolate caliente.",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "D",
+      "definicion": "Primera comida que hacemos al levantarnos por la mañana.",
+      "respuesta": "Desayuno",
+      "pista": "Lo comemos antes de ir al colegio o al trabajo",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "E",
+      "definicion": "Comida fría que lleva lechuga, tomate y a veces cebolla o atún. Se aliña con aceite y sal.",
+      "respuesta": "Ensalada",
+      "pista": "También se puede aliñar con vinagre",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "F",
+      "definicion": "Fruta roja, dulce, que se come en primavera. Se puede comer con nata o leche.",
+      "respuesta": "Fresa",
+      "pista": "También se puede utilizar para tartas",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "H",
+      "definicion": "Lo pone la gallina. Es blanco por fuera y amarillo por dentro. Se puede cocer o freír.",
+      "respuesta": "Huevo",
+      "pista": "Suelen ser blancos o marrones",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "J",
+      "definicion": "Alimento muy típico en España, se corta en lonchas finas.",
+      "respuesta": "Jamón",
+      "pista": "Es la parte trasera del cerdo y se puede poner en bocadillos",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "J",
+      "definicion": "Legumbre blanca que se cocina con agua y a veces con chorizo o morcilla.",
+      "respuesta": "Judías",
+      "pista": "Se usan para hacer platos de cuchara como la fabada.",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "K",
+      "definicion": "Fruta de piel marrón y peluda, con interior verde y semillas negras.",
+      "respuesta": "Kiwi",
+      "pista": "Su sabor es ácido y se come con cuchara o en rodajas.",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "N",
+      "definicion": "Fruta redonda que solemos tomar en zumo.",
+      "respuesta": "Naranja",
+      "pista": "Fruta que también es un color",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "P",
+      "definicion": "Dulce que se toma al final de kla comida, puede ser pastel, fruta o yogur.",
+      "respuesta": "Postre",
+      "pista": "Se come después del plato principal",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "S",
+      "definicion": "Fruta que se come en verano y tiene muchas pepitas negras.",
+      "respuesta": "Sandía",
+      "pista": "Es verde por fuera, roja por dentro y suelta mucha agua.",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "T",
+      "definicion": "Se hace solo con huevos batidos en una sartén.",
+      "respuesta": "Tortilla",
+      "pista": "Puede ser con patatas u otras verduras",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "U",
+      "definicion": "Fruta pequeña y redonda que va en racimo.",
+      "respuesta": "Uva",
+      "pista": "También se usa para hacer el vino",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "Z",
+      "definicion": "Hortaliza de color naranja que se usa en sopas o purés.",
+      "respuesta": "Zanahoria",
+      "pista": "Es larga y la comen los conejos",
+      "dificultad": "Difícil"
+    }
+  ]
 }
+

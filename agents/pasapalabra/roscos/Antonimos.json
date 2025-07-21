@@ -1,54 +1,110 @@
 {
-    "preguntas": [
-        {
-            "letra": "A",
-            "definicion": "Lo contrario de bajo",
-            "respuesta": "Alto"
-        },
-        {
-            "letra": "B",
-            "definicion": "Lo contrario de malo",
-            "respuesta": "Bueno"
-        },
-        {
-            "letra": "C",
-            "definicion": "Lo contrario de triste",
-            "respuesta": "Contento"
-        },
-        {
-            "letra": "F",
-            "definicion": "Lo contrario de guapo",
-            "respuesta": "Feo"
-        },
-        {
-            "letra": "L ",
-            "definicion": "Lo contrario de rápido",
-            "respuesta": "Lento"
-        },
-        {
-            "letra": "N",
-            "definicion": "Lo contrario de todo",
-            "respuesta": "Nada"
-        },
-        {
-            "letra": "P",
-            "definicion": "Lo contrario de ganar",
-            "respuesta": "Perder"
-        },
-        {
-            "letra": "S",
-            "definicion": "Lo contrario de bajar",
-            "respuesta": "Subir"
-        },
-        {
-            "letra": "T",
-            "definicion": "Lo contrario de empezar",
-            "respuesta": "Terminar"
-        },
-        {
-            "letra": "V",
-            "definicion": "Lo contrario de cobarde",
-            "respuesta": "Valiente"
-        }
-    ]
+  "preguntas": [
+    {
+      "letra": "A",
+      "definicion": "Lo contrario de bajo.",
+      "respuesta": "Alto",
+      "pista": "Como cuando algo no se puede alcanzar sin una silla",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "B",
+      "definicion": "Lo contrario de malo.",
+      "respuesta": "Bueno",
+      "pista": "Como cuando algo está bien hecho",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "C",
+      "definicion": "Lo contrario de triste.",
+      "respuesta": "Contento",
+      "pista": "Así se siente alguien que se ríe",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "D",
+      "definicion": "Lo contrario de rebelde.",
+      "respuesta": "Dócil",
+      "pista": "Como un animal o niño que obedece sin protestar",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "F",
+      "definicion": "Lo contrario de guapo.",
+      "respuesta": "Feo",
+      "pista": "Cuando alguien no es bonito",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "H",
+      "definicion": "Lo contrario de mentiroso.",
+      "respuesta": "Honesto",
+      "pista": "Alguien que dice siempre la verdad y actúa con sinceridad",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "J",
+      "definicion": "Lo contrario de injusto.",
+      "respuesta": "Justo",
+      "pista": "Una persona que trata a todos por igual y con equidad",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "L",
+      "definicion": "Lo contrario de rápido.",
+      "respuesta": "Lento",
+      "pista": "Como cuando alguien camina muy despacio",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "N",
+      "definicion": "Lo contrario de todo.",
+      "respuesta": "Nada",
+      "pista": "Como cuando abres el cajón y no hay nada",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "P",
+      "definicion": "Lo contrario de ganar.",
+      "respuesta": "Perder",
+      "pista": "Como cuando no aciertas en un juego",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "S",
+      "definicion": "Lo contrario de bajar.",
+      "respuesta": "Subir",
+      "pista": "Como cuando coges el ascensor hacia arriba",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "T",
+      "definicion": "Lo contrario de empezar.",
+      "respuesta": "Terminar",
+      "pista": "Lo que pasa cuando se acaba la misa o la novela",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "U",
+      "definicion": "Lo contrario de separar.",
+      "respuesta": "Unir",
+      "pista": "Como cuando juntamos piezas de un puzzle",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "V",
+      "definicion": "Lo contrario de cobarde.",
+      "respuesta": "Valiente",
+      "pista": "Como quien entra al médico sin miedo",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "Z",
+      "definicion": "Lo contrario de inteligente, en lenguaje coloquial.",
+      "respuesta": "Zoquete",
+      "pista": "Así se llama, de forma informal, a alguien que no entiende nada",
+      "dificultad": "Difícil"
+    }
+  ]
 }
+

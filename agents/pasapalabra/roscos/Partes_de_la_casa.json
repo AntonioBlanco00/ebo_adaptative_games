@@ -1,54 +1,110 @@
 {
-    "preguntas": [
-        {
-            "letra": "B",
-            "definicion": "Lugar donde nos duchamos y hacemos nuestras necesidades",
-            "respuesta": "Baño"
-        },
-        {
-            "letra": "C",
-            "definicion": "Lugar donde se hacen las comidas",
-            "respuesta": "Cocina"
-        },
-        {
-            "letra": "E",
-            "definicion": "Por donde subimos y bajamos de una planta a otra",
-            "respuesta": "Escaleras"
-        },
-        {
-            "letra": "F",
-            "definicion": "Electrodoméstico que se utiliza para guardar la comida y mantenerla fría",
-            "respuesta": "Frigorifico"
-        },
-        {
-            "letra": "G",
-            "definicion": "Parte de la casa donde se guarda el coche",
-            "respuesta": "Garaje"
-        },
-        {
-            "letra": "H",
-            "definicion": "Parte de la casa en la que descansamos en la cama",
-            "respuesta": "Habitación"
-        },
-        {
-            "letra": "J",
-            "definicion": "Parte exterior de la casa en la que suele haber plantas",
-            "respuesta": "Jardín"
-        },
-        {
-            "letra": "R",
-            "definicion": "Objeto que solemos tener en la cocina o en salas y que sirve para ver la hora",
-            "respuesta": "Reloj"
-        },
-        {
-            "letra": "S",
-            "definicion": "Lugar de la casa que suele tener un sofá, mesa y televisión",
-            "respuesta": "Salón"
-        },
-        {
-            "letra": "V",
-            "definicion": "Llamamos así a la persona que vive al lado nuestra",
-            "respuesta": "Vecino"
-        }
-    ]
+  "preguntas": [
+    {
+      "letra": "A",
+      "definicion": "Tela gruesa que se pone en el suelo para decorar o abrigar.",
+      "respuesta": "Alfombra",
+      "pista": "Está en el suelo del salón o del dormitorio",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "B",
+      "definicion": "Lugar donde nos duchamos y hacemos nuestras necesidades.",
+      "respuesta": "Baño",
+      "pista": "Tiene ducha, váter y lavabo",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "C",
+      "definicion": "Parte de la casa donde se preparan las comidas.",
+      "respuesta": "Cocina",
+      "pista": "Donde cocinamos y encontramos el fuego, horno, microondas",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "D",
+      "definicion": "Parte alta de la casa donde se guardan cosas que no se usan a diario.",
+      "respuesta": "Desván",
+      "pista": "Lugar con polvo y cajas, a veces lleno de recuerdos.",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "E",
+      "definicion": "Lo usamos para subir o bajar de una planta a otra.",
+      "respuesta": "Escaleras",
+      "pista": "Peldaños unidos que pueden ser de madera o piedra",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "F",
+      "definicion": "Electrodoméstico que se utiliza para guardar la comida y mantenerla fría.",
+      "respuesta": "Frigorífico",
+      "pista": "Se abre para coger leche, yogures, fruta",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "H",
+      "definicion": "Parte de la casa donde dormimos.",
+      "respuesta": "Habitación",
+      "pista": "Donde está la cama, el armario, la mesita...",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "I",
+      "definicion": "Interruptor que se pulsa para encender o apagar la luz.",
+      "respuesta": "Interruptor",
+      "pista": "Suele estar en la pared, junto a la puerta",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "J",
+      "definicion": "Espacio exterior o interior con plantas, a veces con fuente o césped.",
+      "respuesta": "Jardín",
+      "pista": "Puede tener flores, árboles y se riega",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "L",
+      "definicion": "Objeto que da luz en la casa por la noche.",
+      "respuesta": "Lámpara",
+      "pista": "Puede estar en el techo o en una mesita",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "N",
+      "definicion": "Mueble o habitación pequeña donde se guardan alimentos no perecederos.",
+      "respuesta": "Nevera",
+      "pista": "Aunque también enfría, no es un armario, ni un cuarto",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "P",
+      "definicion": "Parte exterior de la casa en la que suele haber plantas.",
+      "respuesta": "Patio",
+      "pista": "También se puede tender la ropa y tomar el fresco",
+      "dificultad": "Media"
+    },
+    {
+      "letra": "R",
+      "definicion": "Objeto que sirve para ver la hora.",
+      "respuesta": "Reloj",
+      "pista": "Puede colgarse en la pared o ir en la muñeca",
+      "dificultad": "Difícil"
+    },
+    {
+      "letra": "S",
+      "definicion": "Parte de la casa donde vemos la tele y nos sentamos en el sofá.",
+      "respuesta": "Salón",
+      "pista": "Suele haber mesa, sillones...",
+      "dificultad": "Fácil"
+    },
+    {
+      "letra": "V",
+      "definicion": "Persona con la que compartimos edificio o calle.",
+      "respuesta": "Vecino",
+      "pista": "A veces nos lo cruzamos en el portal",
+      "dificultad": "Media"
+    }
+  ]
 }
+

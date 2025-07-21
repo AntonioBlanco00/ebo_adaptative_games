@@ -94,7 +94,6 @@ class SpecificWorker(GenericWorker):
         imagen = Image.merge("RGB", (b, g, r))
 
         # Convertimos la imagen PIL a un array de NumPy para evitar guardar la imagen en disco
-        import numpy as np
         imagen_np = np.array(imagen)
 
         error_detected = False
