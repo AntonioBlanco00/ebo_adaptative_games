@@ -132,6 +132,11 @@ class SpecificWorker(GenericWorker):
         ui.story_button.clicked.connect(self.story_clicked)
         ui.simon_button.clicked.connect(self.simon_clicked)
         ui.pasapalabra_button.clicked.connect(self.pasapalabra_clicked)
+
+        ui.ayuda.hide()
+        ui.ayuda_button.clicked.connect(self.ayuda_clicked)
+
+        ui.resultados_button.clicked.connect(self.ejecutar_script)
         
         # Asegurar que el diccionario de UIs existe
         if not hasattr(self, 'ui_numbers'):
@@ -142,6 +147,19 @@ class SpecificWorker(GenericWorker):
 
         return ui
 
+    def ayuda_clicked(self):
+        if self.ui.ayuda.isVisible():  # Verifica si está visible
+            self.ui.ayuda.hide()  # Si está visible, ocultarlo
+        else:
+            self.ui.ayuda.show()
+
+    def ejecutar_script(self):
+        try:
+            subprocess.run(["python3", "../../generar_resultados.py"], check=True)
+            QMessageBox.information(self, "Completado",
+                                    "La generación de resultados se ha completado con éxito.")
+        except subprocess.CalledProcessError as e:
+            QMessageBox.critical(self, "Error", f"Hubo un error al generar los resultados:\n{e}")
 
     def story_clicked(self):
         self.ui.removeEventFilter(self) # Desactivamos y activamos el eventfilter antes y despues de cerrar la ventana para que no se raye

@@ -724,11 +724,11 @@ class SpecificWorker(GenericWorker):
         file.close()
 
         # Asignar las imágenes a los QLabel después de cargar la UI
-        # ui.label_2.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
-        # ui.label_2.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
+        ui.label_2.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
+        ui.label_2.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
 
-        # ui.label_3.setPixmap(QPixmap("../../igs/logos/robolab.png"))
-        # ui.label_3.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
+        ui.label_3.setPixmap(QPixmap("../../igs/logos/robolab.png"))
+        ui.label_3.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
 
         # Conectar botones a funciones
         ui.correcta.clicked.connect(self.correcta_clicked)
@@ -736,10 +736,10 @@ class SpecificWorker(GenericWorker):
         ui.pasapalabra.clicked.connect(self.pasapalabra_clicked)
         ui.repetir.clicked.connect(self.repetir_clicked)
 
-        # ui.ayuda.hide()
-        # ui.ayuda_button.clicked.connect(self.ayuda_clicked)
+        ui.ayuda.hide()
+        ui.ayuda_button.clicked.connect(self.ayuda_clicked)
 
-        # ui.back_button.clicked.connect(self.back_clicked)
+        ui.back_button.clicked.connect(self.back_clicked)
         
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
@@ -801,10 +801,10 @@ class SpecificWorker(GenericWorker):
         ui.confirmar_button.clicked.connect(self.therapist)
         ui.confirmar_button_2.clicked.connect(self.therapist_exist)
 
-        # ui.ayuda.hide()
-        # ui.ayuda_button.clicked.connect(self.ayuda_clicked2)
-        #
-        # ui.back_button.clicked.connect(self.back_clicked2)
+        ui.ayuda.hide()
+        ui.ayuda_button.clicked.connect(self.ayuda_clicked2)
+
+        ui.back_button_2.clicked.connect(self.back_clicked2)
 
         self.cargarUsuarios(ui, self.archivo_csv)
 
@@ -815,6 +815,18 @@ class SpecificWorker(GenericWorker):
         self.ui_numbers[ui] = 2  
         ui.installEventFilter(self) 
         return ui
+
+    def ayuda_clicked2(self):
+        print("BOTON AYUDA PULSADO")
+        if self.ui2.ayuda.isVisible():  # Verifica si está visible
+            self.ui2.ayuda.hide()  # Si está visible, ocultarlo
+        else:
+            self.ui2.ayuda.show()
+
+    def back_clicked2(self):
+        print("Volviendo al menu principal")
+        self.cerrar_ui(2)
+        self.gestorsg_proxy.LanzarApp()
 
     def cargarUsuarios(self, ui, archivo_csv):
         opciones = ["Seleccionar usuario..."]

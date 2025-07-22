@@ -145,20 +145,38 @@ class SpecificWorker(GenericWorker):
         ui = loader.load(file)
         file.close()
 
+        # Asignar las imágenes a los QLabel después de cargar la UI
+        ui.label.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
+        ui.label.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
+
+        ui.label_2.setPixmap(QPixmap("../../igs/logos/robolab.png"))
+        ui.label_2.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
+
         # Conectar botones a funciones
         ui.conversation_game.clicked.connect(self.conversation_clicked)
         ui.storytelling_game.clicked.connect(self.story_clicked)
+
+        ui.ayuda.hide()
+        ui.ayuda_button.clicked.connect(self.ayuda_clicked)
+        ui.back_button.clicked.connect(self.back_clicked)
         
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
             self.ui_numbers = {}
             
         self.ui_numbers[ui] = 1  
-        ui.installEventFilter(self) 
-
-
+        ui.installEventFilter(self)
         return ui
 
+    def ayuda_clicked(self):
+        if self.ui.ayuda.isVisible():  # Verifica si está visible
+            self.ui.ayuda.hide()  # Si está visible, ocultarlo
+        else:
+            self.ui.ayuda.show()
+
+    def back_clicked(self):
+        self.cerrar_ui(1)
+        self.gestorsg_proxy.LanzarApp()
 
     def conversation_clicked(self):
         print("Conversación Seleccionada")
@@ -179,6 +197,13 @@ class SpecificWorker(GenericWorker):
         ui = loader.load(file)
         file.close()
 
+        # Asignar las imágenes a los QLabel después de cargar la UI
+        ui.label.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
+        ui.label.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
+
+        ui.label_2.setPixmap(QPixmap("../../igs/logos/robolab.png"))
+        ui.label_2.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
+
         # Conectar botones a funciones
         ui.startGame.clicked.connect(self.startGame_clicked_conv)
         ui.startGame_user.clicked.connect(self.startGame_user_clicked_conv)
@@ -188,6 +213,11 @@ class SpecificWorker(GenericWorker):
         ui.comboBox.addItems(opciones)
 
         self.cargarUsuarios(ui, self.archivo_csv)
+
+        ui.ayuda.hide()
+        ui.ayuda_button.clicked.connect(self.ayuda_clicked2)
+
+        ui.back_button.clicked.connect(self.back_clicked2)
         
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
@@ -197,6 +227,16 @@ class SpecificWorker(GenericWorker):
         ui.installEventFilter(self) 
 
         return ui
+
+    def ayuda_clicked2(self):
+        if self.ui2.ayuda.isVisible():  # Verifica si está visible
+            self.ui2.ayuda.hide()  # Si está visible, ocultarlo
+        else:
+            self.ui2.ayuda.show()
+
+    def back_clicked2(self):
+        self.cerrar_ui(2)
+        self.gestorsg_proxy.LanzarApp()
 
     def cargarUsuarios(self, ui, archivo_csv):
         opciones = ["Seleccionar usuario..."]
@@ -320,12 +360,24 @@ class SpecificWorker(GenericWorker):
         ui = loader.load(file)
         file.close()
 
+        # Asignar las imágenes a los QLabel después de cargar la UI
+        ui.label.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
+        ui.label.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
+
+        ui.label_2.setPixmap(QPixmap("../../igs/logos/robolab.png"))
+        ui.label_2.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
+
         # Conectar botones a funciones
         ui.startGame.clicked.connect(self.startGame_clicked)
         ui.startGame_user.clicked.connect(self.startGame_user_clicked)
         self.configure_combobox(ui, "../juegos_story")
 
         self.cargarUsuarios(ui, self.archivo_csv)
+
+        ui.ayuda.hide()
+        ui.ayuda_button.clicked.connect(self.ayuda_clicked3)
+
+        ui.back_button_2.clicked.connect(self.back_clicked3)
         
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
@@ -335,6 +387,16 @@ class SpecificWorker(GenericWorker):
         ui.installEventFilter(self) 
 
         return ui
+
+    def ayuda_clicked3(self):
+        if self.ui3.ayuda.isVisible():  # Verifica si está visible
+            self.ui3.ayuda.hide()  # Si está visible, ocultarlo
+        else:
+            self.ui3.ayuda.show()
+
+    def back_clicked3(self):
+        self.cerrar_ui(3)
+        self.gestorsg_proxy.LanzarApp()
 
     def configure_combobox(self, ui, folder_path):
         # Acceder al QComboBox por su nombre de objeto
@@ -511,13 +573,22 @@ class SpecificWorker(GenericWorker):
         ui = loader.load(file)
         file.close()
 
+        # Asignar las imágenes a los QLabel después de cargar la UI
+        ui.label.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
+        ui.label.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
+
+        ui.label_2.setPixmap(QPixmap("../../igs/logos/robolab.png"))
+        ui.label_2.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
+
         # Conectar botones a funciones
         ui.enviar.clicked.connect(self.enviar_clicked)
         ui.salir.clicked.connect(self.salir_clicked)
         
         ui.respuesta.installEventFilter(self)
 
-        
+        ui.ayuda.hide()
+        ui.ayuda_button.clicked.connect(self.ayuda_clicked4)
+
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
             self.ui_numbers = {}
@@ -526,7 +597,13 @@ class SpecificWorker(GenericWorker):
         ui.installEventFilter(self) 
 
         return ui
-    
+
+    def ayuda_clicked4(self):
+        if self.ui4.ayuda.isVisible():  # Verifica si está visible
+            self.ui4.ayuda.hide()  # Si está visible, ocultarlo
+        else:
+            self.ui4.ayuda.show()
+
     def enviar_clicked(self):
         mensaje = self.ui4.respuesta.toPlainText()
 

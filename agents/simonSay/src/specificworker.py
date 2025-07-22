@@ -623,8 +623,21 @@ class SpecificWorker(GenericWorker):
         file.open(QtCore.QFile.ReadOnly)
         ui = loader.load(file)
         file.close()
+
+        # Asignar las imágenes a los QLabel después de cargar la UI
+        ui.label.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
+        ui.label.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
+
+        ui.label_3.setPixmap(QPixmap("../../igs/logos/robolab.png"))
+        ui.label_3.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
+
         ui.confirmar_button.clicked.connect(self.therapist)
         ui.confirmar_button_2.clicked.connect(self.automatic)
+
+        ui.ayuda.hide()
+        ui.ayuda_button.clicked.connect(self.ayuda_clicked)
+
+        ui.back_button.clicked.connect(self.back_clicked)
 
         self.cargarUsuarios(ui, self.archivo_csv)
         # Cerrar con la x
@@ -634,6 +647,16 @@ class SpecificWorker(GenericWorker):
         self.ui_numbers[ui] = 2  
         ui.installEventFilter(self) 
         return ui
+
+    def ayuda_clicked(self):
+        if self.ui2.ayuda.isVisible():  # Verifica si está visible
+            self.ui2.ayuda.hide()  # Si está visible, ocultarlo
+        else:
+            self.ui2.ayuda.show()
+
+    def back_clicked(self):
+        self.cerrar_ui(2)
+        self.gestorsg_proxy.LanzarApp()
 
     def cargarUsuarios(self, ui, archivo_csv):
         opciones = ["Seleccionar usuario..."]
