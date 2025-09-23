@@ -72,27 +72,18 @@ class SpecificWorker(GenericWorker):
             self.timer.timeout.connect(self.compute)
             self.timer.start(self.Period)
 
-        self.flag_test = True
         print("COMPONENTE STORYTELLING INICIADO")
         self.archivo_csv = "../../users_info.csv"
 
+        # CARGA DE IGS
         self.ui = self.game_selector_ui()
         self.ui2 = self.conversational_ui()
         self.ui3 = self.storytelling_ui()
         self.ui4 = self.respuesta_ui()
 
-        # Actualizar valores en el JSON
-        self.nombre_jugador = ""
-        self.aficiones = ""
-        self.edad = ""
-        self.familiares = ""
-
-        self.personalidad = ""
-
-        self.st_jc = ""
+        self.reiniciar_variables()
 
         self.update_ui_signal.connect(self.on_update_ui)
-
 
     def __del__(self):
         """Destructor"""
@@ -119,64 +110,258 @@ class SpecificWorker(GenericWorker):
 
         self.personalidad = ""
         self.st_jc = ""
-        
-    ################ FUNCIONES RELACIONADAS CON LA INTERFAZ GRÁFICA ################
 
-    def centrar_ventana(self, ventana):
-        # Obtener la geometría de la pantalla
-        pantalla = QApplication.primaryScreen().availableGeometry()
+    # METHOD PARA CARGAR UIS
+    def load_ui(self, ui_path, ui_number, logo_paths=None, botones=None, ayuda_button=None, back_button=None,
+                combo_options=None):
+        """
+        Method genérico para cargar una UI desde archivo .ui.
 
-        # Obtener el tamaño de la ventana
-        tamano_ventana = ventana.size()
-
-        # Calcular las coordenadas para centrar la ventana
-        x = (pantalla.width() - tamano_ventana.width()) // 2
-        y = (pantalla.height() - tamano_ventana.height()) // 2
-
-        # Mover la ventana a la posición calculada
-        ventana.move(x, y)
-
-    #### UI 1 #### ################ ############################################### ################
-    def game_selector_ui (self):
-        #Carga la interfaz desde el archivo .ui
+        :param ui_path: Ruta al archivo .ui
+        :param ui_number: Número identificador de la UI (1,2,3,4)
+        :param logo_paths: Diccionario de QLabel -> ruta de imagen
+        :param botones: Diccionario de botón -> función a conectar
+        :param ayuda_button: Nombre del botón de ayuda para mostrar/ocultar panel ayuda
+        :param back_button: Nombre del botón de back para volver al menú principal
+        :param combo_options: Diccionario de QComboBox -> lista de opciones a cargar
+        :return: Objeto UI cargado
+        """
         loader = QtUiTools.QUiLoader()
-        file = QtCore.QFile("../../igs/seleccion_menu.ui")
-        file.open(QtCore.QFile.ReadOnly)
+        file = QFile(ui_path)
+        file.open(QFile.ReadOnly)
         ui = loader.load(file)
         file.close()
 
-        # Asignar las imágenes a los QLabel después de cargar la UI
-        ui.label.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
-        ui.label.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
+        # Configurar logos
+        if logo_paths:
+            for label_name, path in logo_paths.items():
+                label = getattr(ui, label_name, None)
+                if label:
+                    label.setPixmap(QPixmap(path))
+                    label.setScaledContents(True)
 
-        ui.label_2.setPixmap(QPixmap("../../igs/logos/robolab.png"))
-        ui.label_2.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
+        # Conectar botones
+        if botones:
+            for btn_name, func in botones.items():
+                btn = getattr(ui, btn_name, None)
+                if btn:
+                    btn.clicked.connect(func)
 
-        # Conectar botones a funciones
-        ui.conversation_game.clicked.connect(self.conversation_clicked)
-        ui.storytelling_game.clicked.connect(self.story_clicked)
+        # Botón de ayuda
+        if ayuda_button and hasattr(ui, ayuda_button):
+            getattr(ui, ayuda_button).clicked.connect(lambda: self.toggle_ayuda(ui))
+            if hasattr(ui, "ayuda"):
+                ui.ayuda.hide()
 
-        ui.ayuda.hide()
-        ui.ayuda_button.clicked.connect(self.ayuda_clicked)
-        ui.back_button.clicked.connect(self.back_clicked)
-        
-        # Cerrar con la x
+        # Botón de back
+        if back_button and hasattr(ui, back_button):
+            getattr(ui, back_button).clicked.connect(lambda: self.back_clicked_ui(ui_number))
+
+        # Cargar opciones en ComboBox si se pasan
+        if combo_options:
+            for combo_name, opciones in combo_options.items():
+                combo = getattr(ui, combo_name, None)
+                if combo:
+                    combo.addItems(opciones)
+
+        # Registrar UI para eventFilter
         if not hasattr(self, 'ui_numbers'):
             self.ui_numbers = {}
-            
-        self.ui_numbers[ui] = 1  
+        self.ui_numbers[ui] = ui_number
         ui.installEventFilter(self)
+
         return ui
 
-    def ayuda_clicked(self):
-        if self.ui.ayuda.isVisible():  # Verifica si está visible
-            self.ui.ayuda.hide()  # Si está visible, ocultarlo
-        else:
-            self.ui.ayuda.show()
+    # CARGA DE UIs
 
-    def back_clicked(self):
-        self.cerrar_ui(1)
-        self.gestorsg_proxy.LanzarApp()
+    def game_selector_ui(self):
+        return self.load_ui(
+            "../../igs/seleccion_menu.ui",
+            ui_number=1,
+            logo_paths={
+                "label": "../../igs/logos/logo_euro.png",
+                "label_2": "../../igs/logos/robolab.png"
+            },
+            botones={
+                "conversation_game": self.conversation_clicked,
+                "storytelling_game": self.story_clicked
+            },
+            ayuda_button="ayuda_button",
+            back_button="back_button"
+        )
+
+    def conversational_ui(self):
+        ui = self.load_ui(
+            "../../igs/conversacional_menu.ui",
+            ui_number=2,
+            logo_paths={
+                "label": "../../igs/logos/logo_euro.png",
+                "label_2": "../../igs/logos/robolab.png"
+            },
+            botones={
+                "startGame": lambda: self.start_game(tipo="conv", manual=True),
+                "startGame_user": lambda: self.start_game(tipo="conv", manual=False)
+            },
+            ayuda_button="ayuda_button",
+            back_button="back_button"
+        )
+
+        # Agregar opciones de personalidad
+        opciones = ["Seleccionar Personalidad...", "EBO_simpatico", "EBO_neutro", "EBO_pasional"]
+        ui.comboBox.addItems(opciones)
+
+        # Cargar usuarios desde CSV
+        self.cargarUsuarios(ui, self.archivo_csv)
+
+        return ui
+
+    def storytelling_ui(self):
+        ui = self.load_ui(
+            "../../igs/storytelling_menu.ui",
+            ui_number=3,
+            logo_paths={
+                "label": "../../igs/logos/logo_euro.png",
+                "label_2": "../../igs/logos/robolab.png"
+            },
+            botones={
+                "startGame": lambda: self.start_game(tipo="story", manual=True),
+                "startGame_user": lambda: self.start_game(tipo="story", manual=False)
+            },
+            ayuda_button="ayuda_button",
+            back_button="back_button_2"
+        )
+
+        # Configurar ComboBox con juegos
+        self.configure_combobox(ui, "../juegos_story")
+
+        # Cargar usuarios desde CSV
+        self.cargarUsuarios(ui, self.archivo_csv)
+
+        return ui
+
+    def respuesta_ui(self):
+        ui = self.load_ui(
+            "../../igs/respuesta_gpt.ui",
+            ui_number=4,
+            logo_paths={
+                "label": "../../igs/logos/logo_euro.png",
+                "label_2": "../../igs/logos/robolab.png"
+            },
+            botones={
+                "enviar": self.enviar_clicked,
+                "salir": self.salir_clicked
+            },
+            ayuda_button="ayuda_button"
+        )
+
+        # Registrar eventFilter para QTextEdit (respuestas)
+        ui.respuesta.installEventFilter(self)
+
+        return ui
+
+    ################ FUNCIONES RELACIONADAS CON LA INTERFAZ GRÁFICA ################
+
+    def centrar_ventana(self, ventana):
+        pantalla = QApplication.primaryScreen().availableGeometry()
+        tamano_ventana = ventana.size()
+
+        x = (pantalla.width() - tamano_ventana.width()) // 2
+        y = (pantalla.height() - tamano_ventana.height()) // 2
+
+        ventana.move(x, y)
+
+    ### FUNCIONES QUE IMPLEMENTAN LAS UI
+
+    def back_clicked_ui(self, ui_number):
+        """
+        Función genérica para el botón de back.
+        Cierra la UI correspondiente y lanza el menú principal.
+        """
+        self.cerrar_ui(ui_number)  # Cierra la ventana correspondiente
+        self.gestorsg_proxy.LanzarApp()  # Vuelve al menú principal
+
+    def select_user_generic(self, ui, st=False):
+        """Selecciona un usuario del comboBox y actualiza el CSV Manager."""
+        nombre = ui.comboBox_user.currentText()
+
+        if not nombre or "Seleccionar usuario" in nombre:
+            print("Por favor selecciona un usuario.")
+            return False
+
+        self.nombre_jugador = nombre.split(" - ")[0].strip()
+        node = self.g.get_node("CSV Manager")
+        node.attrs["nombre"].value = self.nombre_jugador
+        self.g.update_node(node)
+        return True
+
+    def toggle_ayuda(self, ui):
+        if hasattr(ui, "ayuda") and ui.ayuda.isVisible():
+            ui.ayuda.hide()
+        elif hasattr(ui, "ayuda"):
+            ui.ayuda.show()
+
+    def leer_datos_generic(self, st=False):
+        """Actualiza variables desde CSV Manager. st indica si es StoryTelling."""
+        self.actualizar_datos()
+        time.sleep(0.5)
+        node = self.g.get_node("CSV Manager")
+
+        self.nombre_jugador = node.attrs["nombre"].value
+        self.aficiones = node.attrs["aficiones"].value
+        self.edad = node.attrs["edad"].value
+        self.familiares = node.attrs["familiares"].value
+
+        if st:
+            self.st_jc = node.attrs["st_jc"].value
+
+        self.user_info = (f"Los datos del usuario con el que vas a hablar son los siguientes. "
+                          f"Nombre: {self.nombre_jugador}. "
+                          f"Edad: {self.edad}. "
+                          f"Aficiones: {self.aficiones}. "
+                          f"Familiares: {self.familiares}.")
+
+        print("-------------------------------------------------------------------")
+        print(self.user_info)
+        print("-------------------------------------------------------------------")
+
+    def start_game(self, tipo="story", manual=True):
+        """
+        Inicia un juego.
+        tipo: "story" o "conv"
+        manual: True si los datos se ingresan manualmente, False si se seleccionan del CSV
+        """
+        ui = self.ui3 if tipo == "story" else self.ui2
+
+        if manual:
+            self.nombre_jugador = ui.nombreE.toPlainText()
+            self.aficiones = ui.aficionE.toPlainText()
+            self.edad = ui.edadE.toPlainText()
+            self.familiares = ui.famiE.toPlainText()
+        else:
+            self.select_user_generic(ui, st=(tipo == "story"))
+            self.leer_datos_generic(st=(tipo == "story"))
+
+        self.update_dsr()  # Actualiza CSV Manager
+
+        if tipo == "story":
+            juego = ui.comboBox.currentText() if manual else self.select_random_game()
+            if not juego or "Seleccionar juego" in juego:
+                print("Por favor selecciona un juego.")
+                return
+            self.archivo_path = os.path.join("../juegos_story", f"{juego}.json")
+            self.user_info = self.archivo_json_a_string(self.archivo_path)
+            self.story_selected_dsr(juego)
+        else:
+            self.user_info = f"Conversación con {self.nombre_jugador}"
+            self.story_selected_dsr("Conversation")
+
+        self.cerrar_ui(3 if tipo == "story" else 2)
+
+        self.gpt_proxy.setGameInfo("StoryTelling" if tipo == "story" else "Conversation", self.user_info)
+        self.lanzar_ui4()
+        self.ui4.text_info.setText("EBO comenzará a hablar en breve")
+        self.gpt_proxy.startChat()
+        self.ui4.text_info.setText("Introduzca respuesta")
 
     def conversation_clicked(self):
         print("Conversación Seleccionada")
@@ -187,56 +372,6 @@ class SpecificWorker(GenericWorker):
         print("Story Telling Seleccionado")
         self.cerrar_ui(1)
         self.lanzar_ui3()
-
-    #### UI 2 #### ################ ############################################### ################
-    def conversational_ui (self):
-        #Carga la interfaz desde el archivo .ui
-        loader = QtUiTools.QUiLoader()
-        file = QtCore.QFile("../../igs/conversacional_menu.ui")
-        file.open(QtCore.QFile.ReadOnly)
-        ui = loader.load(file)
-        file.close()
-
-        # Asignar las imágenes a los QLabel después de cargar la UI
-        ui.label.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
-        ui.label.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
-
-        ui.label_2.setPixmap(QPixmap("../../igs/logos/robolab.png"))
-        ui.label_2.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
-
-        # Conectar botones a funciones
-        ui.startGame.clicked.connect(self.startGame_clicked_conv)
-        ui.startGame_user.clicked.connect(self.startGame_user_clicked_conv)
-
-        # Añadir opciones al ComboBox
-        opciones = ["Seleccionar Personalidad...", "EBO_simpatico", "EBO_neutro", "EBO_pasional"]
-        ui.comboBox.addItems(opciones)
-
-        self.cargarUsuarios(ui, self.archivo_csv)
-
-        ui.ayuda.hide()
-        ui.ayuda_button.clicked.connect(self.ayuda_clicked2)
-
-        ui.back_button.clicked.connect(self.back_clicked2)
-        
-        # Cerrar con la x
-        if not hasattr(self, 'ui_numbers'):
-            self.ui_numbers = {}
-            
-        self.ui_numbers[ui] = 2  
-        ui.installEventFilter(self) 
-
-        return ui
-
-    def ayuda_clicked2(self):
-        if self.ui2.ayuda.isVisible():  # Verifica si está visible
-            self.ui2.ayuda.hide()  # Si está visible, ocultarlo
-        else:
-            self.ui2.ayuda.show()
-
-    def back_clicked2(self):
-        self.cerrar_ui(2)
-        self.gestorsg_proxy.LanzarApp()
 
     def cargarUsuarios(self, ui, archivo_csv):
         opciones = ["Seleccionar usuario..."]
@@ -250,50 +385,6 @@ class SpecificWorker(GenericWorker):
         except Exception as e:
             print(f"Error al leer el CSV: {e}")
         ui.comboBox_user.addItems(opciones)
-
-    def startGame_clicked_conv(self):
-        self.setDatos()
-        self.personalidad = self.ui2.comboBox.currentText()
-        if not self.personalidad or self.personalidad == "Seleccionar Personalidad...":
-            print("Por favor selecciona una personalidad.")
-            return
-
-        self.update_dsr()
-
-        self.ui2.nombreE.clear()
-        self.ui2.aficionE.clear()
-        self.ui2.edadE.clear()
-        self.ui2.famiE.clear()
-        # self.ui2.startGame.setEnabled(False)
-
-        print("Iniciando juego con los datos seleccionados")
-        self.story_selected_dsr("Conversation")
-        self.cerrar_ui(2)
-        # SET GAME INFO
-        self.gpt_proxy.setGameInfo(self.personalidad, self.user_info)
-        self.lanzar_ui4()
-        self.ui4.text_info.setText("EBO comenzará a hablar en breve")
-        # START CHAT
-        self.gpt_proxy.startChat()
-        self.ui4.text_info.setText("Introduzca respuesta")
-
-    def startGame_user_clicked_conv(self):
-        self.select_user()
-        self.leerDatos()
-        self.personalidad = self.ui2.comboBox.currentText()
-        if not self.personalidad or self.personalidad == "Seleccionar Personalidad...":
-            print("Por favor selecciona una personalidad.")
-            return
-        print("Iniciando juego con los datos leídos")
-        self.story_selected_dsr("Conversation")
-        self.cerrar_ui(2)
-        # SET GAME INFO
-        self.gpt_proxy.setGameInfo(self.personalidad, self.user_info)
-        self.lanzar_ui4()
-        self.ui4.text_info.setText("EBO comenzará a hablar en breve")
-        # START CHAT
-        self.gpt_proxy.startChat()
-        self.ui4.text_info.setText("Introduzca respuesta")
 
     def setDatos(self):
         self.nombre_jugador = self.ui2.nombreE.toPlainText()
@@ -312,91 +403,11 @@ class SpecificWorker(GenericWorker):
         print(self.user_info)
         print("-------------------------------------------------------------------")
 
-    def leerDatos(self):
-        self.actualizar_datos()
-        time.sleep(0.5)
-        node = self.g.get_node("CSV Manager")
-        self.nombre_jugador = node.attrs["nombre"].value
-        self.aficiones = node.attrs["aficiones"].value
-        self.edad = node.attrs["edad"].value
-        self.familiares = node.attrs["familiares"].value
-
-        self.user_info = (f"Los datos del usuario con el que vas a hablar son los siguientes. "
-                          f"Nombre: {self.nombre_jugador}. "
-                          f"Edad: {self.edad}. "
-                          f"Aficiones: {self.aficiones}. "
-                          f"Familiares: {self.familiares}. "
-                          f"Saludale que ya os conoceis, e inicia la conversación adaptandote a sus aficiones."
-                          )
-        print("-------------------------------------------------------------------")
-        print(self.user_info)
-        print("-------------------------------------------------------------------")
-
-    def select_user(self):
-        print("Usuario seleccionado")
-        nombre = self.ui2.comboBox_user.currentText()
-
-        if not nombre or nombre == "Seleccionar usuario...":
-            print("Por favor selecciona un usuario.")
-            return
-
-        self.nombre_jugador = nombre.split(" - ")[0].strip()
-        node = self.g.get_node("CSV Manager")
-        node.attrs["nombre"].value = self.nombre_jugador
-        self.g.update_node(node)
 
     def actualizar_datos(self):
         node = self.g.get_node("Settings Adapter")
         node.attrs["set_info"].value = True
         self.g.update_node(node)
-
-        #### UI 3 #### ################ ############################################### ################
-
-    def storytelling_ui (self):
-        #Carga la interfaz desde el archivo .ui
-        loader = QtUiTools.QUiLoader()
-        file = QtCore.QFile("../../igs/storytelling_menu.ui")
-        file.open(QtCore.QFile.ReadOnly)
-        ui = loader.load(file)
-        file.close()
-
-        # Asignar las imágenes a los QLabel después de cargar la UI
-        ui.label.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
-        ui.label.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
-
-        ui.label_2.setPixmap(QPixmap("../../igs/logos/robolab.png"))
-        ui.label_2.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
-
-        # Conectar botones a funciones
-        ui.startGame.clicked.connect(self.startGame_clicked)
-        ui.startGame_user.clicked.connect(self.startGame_user_clicked)
-        self.configure_combobox(ui, "../juegos_story")
-
-        self.cargarUsuarios(ui, self.archivo_csv)
-
-        ui.ayuda.hide()
-        ui.ayuda_button.clicked.connect(self.ayuda_clicked3)
-
-        ui.back_button_2.clicked.connect(self.back_clicked3)
-        
-        # Cerrar con la x
-        if not hasattr(self, 'ui_numbers'):
-            self.ui_numbers = {}
-            
-        self.ui_numbers[ui] = 3  
-        ui.installEventFilter(self) 
-
-        return ui
-
-    def ayuda_clicked3(self):
-        if self.ui3.ayuda.isVisible():  # Verifica si está visible
-            self.ui3.ayuda.hide()  # Si está visible, ocultarlo
-        else:
-            self.ui3.ayuda.show()
-
-    def back_clicked3(self):
-        self.cerrar_ui(3)
-        self.gestorsg_proxy.LanzarApp()
 
     def configure_combobox(self, ui, folder_path):
         # Acceder al QComboBox por su nombre de objeto
@@ -434,45 +445,6 @@ class SpecificWorker(GenericWorker):
 
         return json.dumps(json_data)
 
-    def startGame_clicked(self):
-        juego = self.ui3.comboBox.currentText()
-
-        if not juego or juego == "Seleccionar juego...":
-            print("Por favor selecciona un juego.")
-            return
-
-        self.nombre_jugador = self.ui3.nombreE.toPlainText()
-        self.aficiones = self.ui3.aficionE.toPlainText()
-        self.edad = self.ui3.edadE.toPlainText()
-        self.familiares = self.ui3.famiE.toPlainText()
-
-        self.update_dsr()
-        
-        folder_path = "../juegos_story"
-        archivo_json = f"{juego}.json"
-        self.archivo_path = os.path.join(folder_path, archivo_json)
-
-        self.user_info = self.archivo_json_a_string(self.archivo_path)
-        
-        print("------------ JSON ENVIADO ---------------------------------")
-        print(self.user_info)
-        print("------------ JSON ENVIADO ---------------------------------")
-
-        self.ui3.nombreE.clear()
-        self.ui3.aficionE.clear()
-        self.ui3.edadE.clear()
-        self.ui3.famiE.clear()
-
-        print("Iniciando juego con los datos seleccionados")
-        self.story_selected_dsr(juego)
-        self.cerrar_ui(3)
-        # SET GAME INFO
-        self.gpt_proxy.setGameInfo("StoryTelling", self.user_info)
-        self.lanzar_ui4()
-        self.ui4.text_info.setText("EBO comenzará a hablar en breve")
-        # START CHAT
-        self.gpt_proxy.startChat()
-        self.ui4.text_info.setText("Introduzca respuesta")
 
     def update_dsr(self):
         node = self.g.get_node("CSV Manager")
@@ -492,56 +464,6 @@ class SpecificWorker(GenericWorker):
 
     #### ################ ############################################### ################
 
-    def startGame_user_clicked(self):
-        self.select_user_st()
-        self.leerDatos_st()
-        juego = self.select_random_game()
-
-        folder_path = "../juegos_story"
-        archivo_json = f"{juego}.json"
-        self.archivo_path = os.path.join(folder_path, archivo_json)
-
-        self.user_info = self.archivo_json_a_string(self.archivo_path)
-
-        print("------------ JSON ENVIADO ---------------------------------")
-        print(self.user_info)
-        print("------------ JSON ENVIADO ---------------------------------")
-
-        print("Iniciando juego con los datos seleccionados")
-        self.story_selected_dsr(juego)
-        self.cerrar_ui(3)
-        # SET GAME INFO
-        self.gpt_proxy.setGameInfo("StoryTelling", self.user_info)
-        self.lanzar_ui4()
-        self.ui4.text_info.setText("EBO comenzará a hablar en breve")
-        # START CHAT
-        self.gpt_proxy.startChat()
-        self.ui4.text_info.setText("Introduzca respuesta")
-
-    def select_user_st(self):
-        print("Usuario seleccionado")
-        nombre = self.ui3.comboBox_user.currentText()
-
-        if not nombre or nombre == "Seleccionar usuario...":
-            print("Por favor selecciona un usuario.")
-            return
-
-        self.nombre_jugador = nombre.split(" - ")[0].strip()
-        node = self.g.get_node("CSV Manager")
-        node.attrs["nombre"].value = self.nombre_jugador
-        self.g.update_node(node)
-
-    def leerDatos_st(self):
-        self.actualizar_datos()
-        time.sleep(0.5)
-        node = self.g.get_node("CSV Manager")
-
-        self.nombre_jugador = node.attrs["nombre"].value
-        self.aficiones = node.attrs["aficiones"].value
-        self.edad = node.attrs["edad"].value
-        self.familiares = node.attrs["familiares"].value
-        self.st_jc = node.attrs["st_jc"].value
-        pass
 
     def select_random_game(self):
         jc = [j.strip().lower() for j in self.st_jc.split(",")]
@@ -563,46 +485,6 @@ class SpecificWorker(GenericWorker):
 
         return juego_seleccionado
 
-
-    #### UI 4 #### ################ ############################################### ################
-    def respuesta_ui (self):
-        #Carga la interfaz desde el archivo .ui
-        loader = QtUiTools.QUiLoader()
-        file = QtCore.QFile("../../igs/respuesta_gpt.ui")
-        file.open(QtCore.QFile.ReadOnly)
-        ui = loader.load(file)
-        file.close()
-
-        # Asignar las imágenes a los QLabel después de cargar la UI
-        ui.label.setPixmap(QPixmap("../../igs/logos/logo_euro.png"))
-        ui.label.setScaledContents(True)  # Asegúrate de que la imagen se ajuste al QLabel
-
-        ui.label_2.setPixmap(QPixmap("../../igs/logos/robolab.png"))
-        ui.label_2.setScaledContents(True)  # Ajusta la imagen a los límites del QLabel
-
-        # Conectar botones a funciones
-        ui.enviar.clicked.connect(self.enviar_clicked)
-        ui.salir.clicked.connect(self.salir_clicked)
-        
-        ui.respuesta.installEventFilter(self)
-
-        ui.ayuda.hide()
-        ui.ayuda_button.clicked.connect(self.ayuda_clicked4)
-
-        # Cerrar con la x
-        if not hasattr(self, 'ui_numbers'):
-            self.ui_numbers = {}
-            
-        self.ui_numbers[ui] = 4  
-        ui.installEventFilter(self) 
-
-        return ui
-
-    def ayuda_clicked4(self):
-        if self.ui4.ayuda.isVisible():  # Verifica si está visible
-            self.ui4.ayuda.hide()  # Si está visible, ocultarlo
-        else:
-            self.ui4.ayuda.show()
 
     def enviar_clicked(self):
         mensaje = self.ui4.respuesta.toPlainText()

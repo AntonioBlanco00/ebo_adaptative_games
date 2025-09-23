@@ -19,26 +19,28 @@
 #    along with RoboComp.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QApplication
-from rich.console import Console
-from genericworker import *
-import interfaces as ifaces
-import json
-from time import sleep
-import pandas as pd
-import time
-from datetime import datetime
-from PySide6 import QtUiTools
-from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
-from PySide6.QtCore import Qt
-import pygame
-from pynput import keyboard
-import threading
-import random
+import os
+import sys
 import csv
+import json
+import time
+import random
+from time import sleep
+from datetime import datetime
 from collections import defaultdict
+from typing import Dict, Optional
 
+import pandas as pd
+import pygame
+from rich.console import Console
+
+from PySide6 import QtCore, QtWidgets, QtUiTools
+from PySide6.QtCore import Signal, Slot, QTimer
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QApplication, QMessageBox
+
+from genericworker import GenericWorker
+import interfaces as ifaces
 
 sys.path.append('/opt/robocomp/lib')
 console = Console(highlight=False)
@@ -52,6 +54,7 @@ from pydsr import *
 # import librobocomp_innermodel
 
 class SpecificWorker(GenericWorker):
+    NUM_LEDS = 54
     update_ui_signal = Signal()
     def __init__(self, proxy_map, startup_check=False):
         super(SpecificWorker, self).__init__(proxy_map)
@@ -103,7 +106,6 @@ class SpecificWorker(GenericWorker):
         self.elapsed_time = None
         self.rosco = ""
         self.bd = ""
-        self.NUM_LEDS = 54
         self.racha_aciertos = 0
         self.umbral_tiempo_pista = 15
         self.pistas_usadas = 0
@@ -117,10 +119,7 @@ class SpecificWorker(GenericWorker):
         ]
 
         ########## DEFINICIÓN DEL DATAFRAME QUE ALMACENA LOS DATOS ##########
-        self.df = pd.DataFrame(
-            columns=["Nombre", "Nivel actual", "Rosco", "Aciertos", "Fallos", "Pasadas", "Nota partida", "Fecha",
-                     "Hora", "Tiempo transcurrido (min)", "Tiempo transcurrido (seg)",
-                     "Tiempo de respuesta medio (seg)"])
+        self.df = self._nuevo_dataframe()
         self.resp = ""
         self.running = False
         self.boton = False
@@ -183,8 +182,21 @@ class SpecificWorker(GenericWorker):
 
         self.update_ui_signal.connect(self.on_update_ui)
 
-        # print("INICIANDO TEST DE INICIO JUEGO")
-        # self.Pasapalabra_StartGame()
+    def _nuevo_dataframe(self) -> pd.DataFrame:
+        return pd.DataFrame(columns=[
+            "Nombre",
+            "Nivel actual",
+            "Rosco",
+            "Aciertos",
+            "Fallos",
+            "Pasadas",
+            "Nota partida",
+            "Fecha",
+            "Hora",
+            "Tiempo transcurrido (min)",
+            "Tiempo transcurrido (seg)",
+            "Tiempo de respuesta medio (seg)"
+        ])
 
     def elegir_respuesta(self, bateria):
         return random.choice(bateria)
@@ -212,21 +224,37 @@ class SpecificWorker(GenericWorker):
     # self.archivo("roscos/animales.json", cupos)
 
     def archivo(self, ruta_json: str,
-                cupos: dict[str, int] | None = None,
-                seed: int | None = None) -> None:
-
+                cupos: Optional[Dict[str, int]] = None,
+                seed: Optional[int] = None) -> None:
+        """
+        Carga preguntas desde un JSON de rosco y las vuelca en
+        self.letras / self.preguntas / self.respuestas / self.pistas / self.dificultades.
+        - cupos: dict con número de preguntas por dificultad {"Fácil": n, "Media": n, "Difícil": n}
+                 Si es None, se cargan todas.
+        - seed:  si no es None, fija la semilla para selección aleatoria (misma salida reproducible).
+        """
         if seed is not None:
+            # Conservamos el comportamiento original: fijar semilla global
             random.seed(seed)
 
-        # 1. Leer el fichero
-        with open(ruta_json, encoding="utf-8") as fh:
-            todas = json.load(fh)["preguntas"]
+        # 1) Leer y validar fichero
+        if not os.path.exists(ruta_json):
+            raise FileNotFoundError(f"No existe el rosco: {ruta_json}")
 
-        # 2. Filtrar por cupos
+        with open(ruta_json, encoding="utf-8") as fh:
+            data = json.load(fh)
+
+        if "preguntas" not in data or not isinstance(data["preguntas"], list):
+            raise ValueError(f"Formato inválido en {ruta_json}: falta lista 'preguntas'.")
+
+        todas = data["preguntas"]
+
+        # 2) Filtrar por cupos (si aplica)
         if cupos:
             bolsas = defaultdict(list)
             for q in todas:
-                bolsas[q["dificultad"]].append(q)
+                dif = q.get("dificultad", "")
+                bolsas[dif].append(q)
 
             seleccion = []
             for nivel, n_pedidas in cupos.items():
@@ -234,32 +262,42 @@ class SpecificWorker(GenericWorker):
                 if not disp:
                     console.print(f"[yellow]⚠ No hay preguntas “{nivel}”.")
                     continue
-                n = min(n_pedidas, len(disp))
-                if n < n_pedidas:
+                n = min(int(n_pedidas), len(disp))
+                if n < int(n_pedidas):
                     console.print(f"[yellow]⚠ Solo hay {n} preguntas “{nivel}”, no {n_pedidas}.")
-                seleccion.extend(random.sample(disp, n))
+                if n > 0:
+                    seleccion.extend(random.sample(disp, n))
         else:
-            seleccion = todas[:]  # copia completa
+            seleccion = list(todas)  # copia completa
 
-        # 2.bis ▸ Ordenar alfabéticamente por la letra
-        seleccion.sort(key=lambda q: q["letra"].lower())
+        # 3) Ordenar alfabéticamente por la letra (case-insensitive)
+        try:
+            seleccion.sort(key=lambda q: str(q["letra"]).lower())
+        except Exception:
+            # Si alguna entrada no tiene 'letra', no ordenamos para no romper
+            pass
 
-        # 3. Resetear contenedores
-        self.letras.clear();
-        self.preguntas.clear();
+        # 4) Resetear contenedores y volcar datos
+        self.letras.clear()
+        self.preguntas.clear()
         self.respuestas.clear()
-        self.pistas.clear();
+        self.pistas.clear()
         self.dificultades.clear()
 
-        # 4. Volcar las preguntas seleccionadas y ordenadas
+        requeridos = ("letra", "definicion", "respuesta")
         for q in seleccion:
+            # Validación mínima por entrada
+            if not all(k in q for k in requeridos):
+                console.print(f"[yellow]⚠ Pregunta incompleta omitida: {q}")
+                continue
+
             self.letras.append(q["letra"])
             self.preguntas.append(q["definicion"])
             self.respuestas.append(q["respuesta"])
             self.pistas.append(q.get("pista", ""))
             self.dificultades.append(q.get("dificultad", ""))
 
-        # TESTEAR QUE FUNCIONA
+        # 5) Logs de verificación (igual que antes)
         print(f"Letras: {self.letras}")
         print(f"Preguntas: {self.preguntas}")
         print(f"Respuestas: {self.respuestas}")
@@ -306,215 +344,161 @@ class SpecificWorker(GenericWorker):
         letras_restantes = self.letras.copy()
 
         while letras_restantes or self.letras_pasadas:
-            # Proceso principal de letras restantes
-            if letras_restantes:
-                for letra in letras_restantes[:]:  # Iteramos sobre una copia de la lista
-                    if not self.running:
-                        break
+            # Primera vuelta: recorremos una copia y vamos quitando de 'letras_restantes'
+            for letra in letras_restantes[:]:
+                if not self.running:
+                    break
+                self._preguntar_letra(letra, es_segunda_vuelta=False)
+                letras_restantes.remove(letra)
 
-                    self.resp = ""
-                    indice = self.letras.index(letra)
-                    respuesta_correcta = self.respuestas[indice]
-                    self.pregunta_actual = self.preguntas[indice]
-                    self.letra_actual = f"Comienza con la letra:{letra}" if self.respuestas[indice].startswith(
-                        letra) else f"Contiene la letra:{letra}"
-                    self.pista_actual = self.pistas[indice]
-
-                    if self.racha_aciertos == 0 and self.fallos >= (2 + self.pistas_usadas):
-                        self.speech_proxy.say(f"{self.letra_actual}, {self.pregunta_actual}. Aquí va una pista: {self.pista_actual}", False)
-                        self.pistas_usadas += 1
-                    else:
-                        self.speech_proxy.say(f"{self.letra_actual}, {self.pregunta_actual}", False)
-
-                    self.terminaHablar()
-
-                    self.start_question_time = time.time()
-                    mostrar_pista_tiempo = False
-
-                    self.ui.respuesta.clear()
-                    self.ui.respuesta.insertPlainText(respuesta_correcta)
-                    self.ui.show()
-
-                    while self.resp == "":
-                        QApplication.processEvents()
-                        tiempo_actual = time.time() - self.start_question_time
-                        # print(f"Tiempo: {tiempo_actual}")
-
-                        # Pista automática por tiempo excesivo
-                        if not mostrar_pista_tiempo and tiempo_actual >= self.umbral_tiempo_pista:
-                            self.speech_proxy.say(f"Te doy una pista: {self.pista_actual}", False)
-                            mostrar_pista_tiempo = True
-
-                    if self.resp == "pasapalabra":
-                        self.speech_proxy.say(self.elegir_respuesta(self.bateria_pasapalabra), False)
-                        print("Has pasado esta letra.")
-                        self.set_all_LEDS_colors(255,255,0)
-                        self.emotionalmotor_proxy.expressSurprise()
-                        sleep(2)
-                        self.set_all_LEDS_colors(0, 0, 0)
-                        sleep (1)
-                        self.letras_pasadas.append(letra)
-                        self.pasadas += 1
-                        self.emotionalmotor_proxy.expressJoy()
-                        letras_restantes.remove(letra)
-                        self.racha_aciertos = 0
-                    elif self.resp == "si":
-                        self.speech_proxy.say(self.elegir_respuesta(self.bateria_aciertos), False)
-                        print("¡Respuesta correcta!")
-                        self.set_all_LEDS_colors(0,255,0)
-                        self.emotionalmotor_proxy.expressJoy()
-                        sleep(1)
-                        self.set_all_LEDS_colors(0, 0, 0)
-                        sleep (1)
-                        self.aciertos += 1
-                        self.emotionalmotor_proxy.expressJoy()
-                        letras_restantes.remove(letra)  # Eliminar la letra de letras_restantes si es correcta
-                        self.racha_aciertos += 1
-                    else:
-                        self.speech_proxy.say(f"{self.elegir_respuesta(self.bateria_fallos)} La respuesta correcta era {respuesta_correcta}", False)
-                        print(f"Respuesta incorrecta! La respuesta es {respuesta_correcta}")
-                        self.set_all_LEDS_colors(255,0,0)
-                        self.emotionalmotor_proxy.expressSadness()
-                        sleep(2)
-                        self.set_all_LEDS_colors(0,0,0)
-                        sleep (1)
-                        self.fallos += 1
-                        self.emotionalmotor_proxy.expressJoy()
-                        letras_restantes.remove(letra)  # Eliminar la letra de letras_restantes si es correcta
-                        self.racha_aciertos = 0
-
-                    self.ajustar_nota_actual(self.resp, self.dificultades[indice])
-                    self.end_question_time = time.time()
-                    self.cerrar_ui(1)
-                    self.response_time = self.end_question_time - self.start_question_time
-                    self.responses_times.append(self.response_time)
-
-            # Proceso de letras pasadas
-            elif self.letras_pasadas:
+            # Segunda vuelta: letras pasadas
+            if self.letras_pasadas:
                 self.speech_proxy.say("Vamos a dar otra vuelta con las letras que pasaste.", False)
                 print("Ahora vamos a repasar las letras que pasaste.")
-                for letra in self.letras_pasadas[:]:  # Iteramos sobre una copia de la lista
+                for letra in self.letras_pasadas[:]:
                     if not self.running:
                         break
-
-                    self.resp = ""
-                    indice = self.letras.index(letra)
-                    respuesta_correcta = self.respuestas[indice]
-                    self.pregunta_actual = self.preguntas[indice]
-                    self.letra_actual = f"Comienza con la letra:{letra}" if self.respuestas[indice].startswith(
-                        letra) else f"Contiene la letra:{letra}"
-                    self.pista_actual = self.pistas[indice]
-
-                    self.speech_proxy.say(self.letra_actual, False)
-                    self.speech_proxy.say(self.pregunta_actual, False)
-
-                    # Control dinámico para decir pistas por fallos acumulados (en pasadas)
-                    if self.racha_aciertos == 0 and self.fallos >= (2 + self.pistas_usadas):
-                        self.speech_proxy.say(f"{self.letra_actual}, {self.pregunta_actual}. Aquí va una pista: {self.pista_actual}", False)
-                        self.pistas_usadas += 1
-                    else:
-                        self.speech_proxy.say(f"{self.letra_actual}, {self.pregunta_actual}", False)
-
-                    self.terminaHablar()
-
-                    self.start_question_time = time.time()
-                    mostrar_pista_tiempo = False
-
-                    self.ui.respuesta.clear()
-                    self.ui.respuesta.insertPlainText(respuesta_correcta)
-                    self.ui.show()
-
-                    while self.resp == "":
-                        QApplication.processEvents()
-                        tiempo_actual = time.time() - self.start_question_time
-                        # print(f"Tiempo: {tiempo_actual}")
-
-                        # Pista automática por tiempo excesivo
-                        if not mostrar_pista_tiempo and tiempo_actual >= self.umbral_tiempo_pista:
-                            self.speech_proxy.say(f"Te doy una pista: {self.pista_actual}", False)
-                            mostrar_pista_tiempo = True
-
-                    if self.resp == "pasapalabra":
-                        self.speech_proxy.say(f"Has pasado esta letra nuevamente", False)
-                        print("Has pasado esta letra nuevamente.")
-                        self.set_all_LEDS_colors(255, 255, 0)
-                        self.emotionalmotor_proxy.expressSurprise()
-                        sleep(2)
-                        self.set_all_LEDS_colors(0, 0, 0)
-                        sleep(1)
-                        self.letras_pasadas.remove(letra)
-                        self.emotionalmotor_proxy.expressJoy()
-                        self.racha_aciertos = 0
-
-                    elif self.resp == "si":
-                        self.speech_proxy.say(self.elegir_respuesta(self.bateria_aciertos), False)
-                        print("¡Respuesta correcta!")
-                        self.set_all_LEDS_colors(0, 255, 0)
-                        self.emotionalmotor_proxy.expressJoy()
-                        sleep(1)
-                        self.set_all_LEDS_colors(0, 0, 0)
-                        sleep(1)
-                        self.aciertos += 1
-                        self.pasadas -= 1
-                        self.emotionalmotor_proxy.expressJoy()
-                        self.letras_pasadas.remove(letra)  # Eliminar la letra de letras_pasadas si es incorrecta
-                        self.racha_aciertos += 1
-
-                    else:
-                        self.speech_proxy.say(f"{self.elegir_respuesta(self.bateria_fallos)} La respuesta correcta era {respuesta_correcta}", False)
-                        print(f"Respuesta incorrecta! La respuesta es {respuesta_correcta}")
-                        self.set_all_LEDS_colors(255, 0, 0)
-                        self.emotionalmotor_proxy.expressSadness()
-                        sleep(1)
-                        self.set_all_LEDS_colors(0, 0, 0)
-                        sleep(1)
-                        self.fallos += 1
-                        self.pasadas -= 1
-                        self.emotionalmotor_proxy.expressJoy()
-                        self.letras_pasadas.remove(letra)  # Eliminar la letra de letras_pasadas si es incorrecta
-                        self.racha_aciertos = 0
-
-                    self.ajustar_nota_actual(self.resp, self.dificultades[indice])
-                    self.end_question_time = time.time()
-                    self.cerrar_ui(1)
-                    self.response_time = self.end_question_time - self.start_question_time
-                    self.responses_times.append(self.response_time)
+                    self._preguntar_letra(letra, es_segunda_vuelta=True)
+                    # En la función se elimina de self.letras_pasadas según tu lógica original
 
         self.end_time = time.time()
         self.elapsed_time = self.end_time - self.start_time  # Tiempo en segundos
-        self.media = sum(self.responses_times) / len(self.responses_times)
+        self.media = sum(self.responses_times) / len(self.responses_times) if self.responses_times else 0
         self.running = False
         R = self.calc_nota_final()
+
         # Resultados finales
         self.speech_proxy.say("Fin del juego. ¡Lo has hecho genial!:", False)
-        self.agregar_resultados(self.nombre, self.rosco, self.aciertos, self.fallos, self.pasadas, self.fecha,
-                                self.hora, (self.elapsed_time//60), (self.elapsed_time%60), self.media, R)
+        self.agregar_resultados(
+            self.nombre, self.rosco, self.aciertos, self.fallos, self.pasadas, self.fecha,
+            self.hora, (self.elapsed_time // 60), (self.elapsed_time % 60), self.media, R
+        )
         self.guardar_resultados()
         self.send_to_csv_manager(self.ajuste_nivel(R))
         # REINICIAR TODAS LAS VARIABLES
         self.reiniciar_variables()
         self.gestorsg_proxy.LanzarApp()
 
-    def ajustar_nota_actual(self, acierto, dificultad):
-        if acierto == "si" and dificultad == "Fácil":
-            self.nota_partida = self.nota_partida + 5
-        if acierto == "si" and dificultad == "Media":
-            self.nota_partida = self.nota_partida + 10
-        if acierto == "si" and dificultad == "Difícil":
-            self.nota_partida = self.nota_partida + 15
-        if acierto == "no" and dificultad == "Media":
-            self.nota_partida = self.nota_partida - 2
-        if acierto == "no" and dificultad == "Difícil":
-            self.nota_partida = self.nota_partida - 5
-        else:
-            pass
+    def _preguntar_letra(self, letra: str, es_segunda_vuelta: bool) -> None:
+        """Lanza la pregunta para una letra (primera o segunda vuelta) y actualiza estado/tiempos."""
+        self.resp = ""
+        indice = self.letras.index(letra)
+        respuesta_correcta = self.respuestas[indice]
+        self.pregunta_actual = self.preguntas[indice]
+        self.letra_actual = (
+            f"Comienza con la letra:{letra}"
+            if self.respuestas[indice].startswith(letra)
+            else f"Contiene la letra:{letra}"
+        )
+        self.pista_actual = self.pistas[indice]
 
-    def calc_nota_final(self): # calcular esto y pasarlo por ajsute_nivel
+        # Anuncio y posible pista por racha/fallos
+        if self.racha_aciertos == 0 and self.fallos >= (2 + self.pistas_usadas):
+            self.speech_proxy.say(
+                f"{self.letra_actual}, {self.pregunta_actual}. Aquí va una pista: {self.pista_actual}",
+                False,
+            )
+            self.pistas_usadas += 1
+        else:
+            self.speech_proxy.say(f"{self.letra_actual}, {self.pregunta_actual}", False)
+
+        self.terminaHablar()
+
+        # Tiempos + UI
+        self.start_question_time = time.time()
+        mostrar_pista_tiempo = False
+
+        self.ui.respuesta.clear()
+        self.ui.respuesta.insertPlainText(respuesta_correcta)
+        self.ui.show()
+
+        while self.resp == "":
+            QApplication.processEvents()
+            tiempo_actual = time.time() - self.start_question_time
+            if not mostrar_pista_tiempo and tiempo_actual >= self.umbral_tiempo_pista:
+                self.speech_proxy.say(f"Te doy una pista: {self.pista_actual}", False)
+                mostrar_pista_tiempo = True
+
+        # Procesar respuesta
+        if self.resp == "pasapalabra":
+            # Primera vuelta: se añade a pasadas y se incrementa contador.
+            if es_segunda_vuelta:
+                self.speech_proxy.say("Has pasado esta letra nuevamente", False)
+                if letra in self.letras_pasadas:
+                    self.letras_pasadas.remove(letra)
+            else:
+                self.speech_proxy.say(random.choice(self.bateria_pasapalabra), False)
+                self.letras_pasadas.append(letra)
+                self.pasadas += 1
+
+            self.set_all_LEDS_colors(255, 255, 0)
+            self.emotionalmotor_proxy.expressSurprise()
+            sleep(2)
+            self.set_all_LEDS_colors(0, 0, 0)
+            sleep(1)
+            self.emotionalmotor_proxy.expressJoy()
+            self.racha_aciertos = 0
+
+        elif self.resp == "si":
+            self.speech_proxy.say(random.choice(self.bateria_aciertos), False)
+            self.set_all_LEDS_colors(0, 255, 0)
+            self.emotionalmotor_proxy.expressJoy()
+            sleep(1)
+            self.set_all_LEDS_colors(0, 0, 0)
+            sleep(1)
+            self.aciertos += 1
+            if es_segunda_vuelta:
+                self.pasadas -= 1
+                if letra in self.letras_pasadas:
+                    self.letras_pasadas.remove(letra)
+            self.racha_aciertos += 1
+
+        else:  # "no" u otra cosa distinta de "si" y "pasapalabra"
+            self.speech_proxy.say(
+                f"{random.choice(self.bateria_fallos)} La respuesta correcta era {respuesta_correcta}",
+                False,
+            )
+            self.set_all_LEDS_colors(255, 0, 0)
+            self.emotionalmotor_proxy.expressSadness()
+            sleep(2)
+            self.set_all_LEDS_colors(0, 0, 0)
+            sleep(1)
+            self.fallos += 1
+            if es_segunda_vuelta:
+                self.pasadas -= 1
+                if letra in self.letras_pasadas:
+                    self.letras_pasadas.remove(letra)
+            self.emotionalmotor_proxy.expressJoy()
+            self.racha_aciertos = 0
+
+        # Puntuación + tiempos
+        self.ajustar_nota_actual(self.resp, self.dificultades[indice])
+        self.end_question_time = time.time()
+        self.cerrar_ui(1)
+        self.response_time = self.end_question_time - self.start_question_time
+        self.responses_times.append(self.response_time)
+
+    def ajustar_nota_actual(self, acierto: str, dificultad: str) -> None:
+        if acierto == "si":
+            self.nota_partida += {"Fácil": 5, "Media": 10, "Difícil": 15}.get(dificultad, 0)
+
+        elif acierto == "no":
+            self.nota_partida += {"Media": -2, "Difícil": -5}.get(dificultad, 0)
+
+    def calc_nota_final(self)  -> float:
         n_facil = self.dificultades.count("Fácil")
         n_media = self.dificultades.count("Media")
         n_dificil = self.dificultades.count("Difícil")
+
         nota_max = n_facil * 5 + n_media * 10 + n_dificil * 15
+
+        if nota_max <= 0:
+            print("Nota obtenida en la partida:  0.0 (sin preguntas)")
+            return 0.0
+
         R = self.nota_partida / nota_max
+        R = max(0.0, min(1.0, R))
+
         print("Nota obtenida en la partida: ", R)
         return R
 
@@ -595,10 +579,7 @@ class SpecificWorker(GenericWorker):
         self.umbral_tiempo_pista = 15
         self.pistas_usadas = 0
 
-        self.df = pd.DataFrame(
-            columns=["Nombre", "Nivel actual", "Rosco", "Aciertos", "Fallos", "Pasadas", "Nota partida", "Fecha",
-                     "Hora", "Tiempo transcurrido (min)", "Tiempo transcurrido (seg)",
-                     "Tiempo de respuesta medio (seg)"])
+        self.df = self._nuevo_dataframe()
 
         print("Variable self.df reiniciada para la próxima partida.")
 
@@ -651,6 +632,7 @@ class SpecificWorker(GenericWorker):
     def terminaHablar(self):
         sleep(2.5)
         while self.speech_proxy.isBusy():
+            time.sleep(0.05)
             pass
 
     ########## FUNCIÓN QUE AGREGA LOS RESULTADOS AL DATAFRAME ##########
@@ -683,11 +665,8 @@ class SpecificWorker(GenericWorker):
     ########## FUNCIÓN QUE GUARDA LOS RESULTADOS DEL JUEGO ##########
     def guardar_resultados(self):
         archivo = "resultados_pasapalabra.json"
-
-        # Inicializar un DataFrame vacío para los resultados existentes
         datos_existentes = pd.DataFrame()
 
-        # Intentar leer el archivo existente si existe
         if os.path.exists(archivo):
             try:
                 datos_existentes = pd.read_json(archivo, orient='records', lines=True)
@@ -707,7 +686,6 @@ class SpecificWorker(GenericWorker):
             print("El DataFrame de nuevos resultados está vacío. No se guardará nada.")
             return
 
-        # Guardar el DataFrame combinado en formato JSON
         self.df.to_json(archivo, orient='records', lines=True)
         print(f"Resultados guardados correctamente en {archivo}")
         df_resultados = pd.read_json(archivo, orient='records', lines=True)
@@ -817,11 +795,10 @@ class SpecificWorker(GenericWorker):
         return ui
 
     def ayuda_clicked2(self):
-        print("BOTON AYUDA PULSADO")
-        if self.ui2.ayuda.isVisible():  # Verifica si está visible
-            self.ui2.ayuda.hide()  # Si está visible, ocultarlo
-        else:
-            self.ui2.ayuda.show()
+        try:
+            self.ui2.ayuda.setVisible(not self.ui2.ayuda.isVisible())
+        except Exception as e:
+            print(f"Error al mostrar/ocultar ayuda: {e}")
 
     def back_clicked2(self):
         print("Volviendo al menu principal")
@@ -906,11 +883,15 @@ class SpecificWorker(GenericWorker):
     def therapist_exist(self):
         self.select_user()
         self.leerDatos()
-        if self.nota != "":
-            cupos = self.cupos_por_nivel(round(float(self.nota)))
-        else:
-            self.nota = "6"
-            cupos = self.cupos_por_nivel(round(float(self.nota)))
+
+        try:
+            nivel = int(round(float(self.nota))) if self.nota else 6
+        except Exception:
+            nivel = 6
+        nivel = max(1, min(21, nivel))  # clamp 1..21
+
+        # Calcular cupos según el nivel
+        cupos = self.cupos_por_nivel(nivel)
 
         self.rosco = self.ui2.comboBox.currentText()
         print(self.rosco)
@@ -919,7 +900,11 @@ class SpecificWorker(GenericWorker):
             self.rosco = self._rosco_aleatorio_no_repetido()
 
         self.archivo(f"roscos/{self.rosco}.json", cupos)
+        print("Usuario:", self.nombre)
+        print("Nivel detectado:", nivel)
+        print("Rosco:", self.rosco)
         print("Valores confirmados. Juego listo para comenzar.")
+
         self.boton = True
         self.running = True
         self.sounds["click"].play()
@@ -975,27 +960,14 @@ class SpecificWorker(GenericWorker):
             print("No se encontró el QComboBox")
 
     def ayuda_clicked(self):
-        print("BOTON AYUDA PULSADO")
-        if self.ui.ayuda.isVisible():  # Verifica si está visible
-            self.ui.ayuda.hide()  # Si está visible, ocultarlo
-        else:
-            self.ui.ayuda.show()
-
-    def ayuda_clicked2(self):
-        print("BOTON AYUDA PULSADO")
-        if self.ui2.ayuda.isVisible():  # Verifica si está visible
-            self.ui2.ayuda.hide()  # Si está visible, ocultarlo
-        else:
-            self.ui2.ayuda.show()
+        try:
+            self.ui.ayuda.setVisible(not self.ui.ayuda.isVisible())
+        except Exception as e:
+            print(f"Error al mostrar/ocultar ayuda: {e}")
 
     def back_clicked(self):
         self.cerrar_ui(1)
         self.gestorsg_proxy.LanzarApp()
-
-    def back_clicked2(self):
-        self.cerrar_ui(2)
-        self.gestorsg_proxy.LanzarApp()
-
     ##########################################################################################
 
     def load_check(self):

@@ -19,19 +19,13 @@
 #    along with RoboComp.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QApplication
 from rich.console import Console
-from tensorflow.python.ops.gen_experimental_dataset_ops import experimental_latency_stats_dataset_eager_fallback
 
 from genericworker import *
 import interfaces as ifaces
 from time import sleep
-from pynput import keyboard
 import random
 from PySide6 import QtUiTools
-from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
-from PySide6.QtCore import Qt
 import pygame
 import time
 import pandas as pd
@@ -41,13 +35,13 @@ import json
 import csv
 from pathlib import Path
 
-CSV_PATH = Path(__file__).resolve().parent / "../../users_info.csv"
-
+CSV_PATH = Path(__file__).resolve().parent.parent.parent.parent / "users_info.csv"
 
 sys.path.append('/opt/robocomp/lib')
 console = Console(highlight=False)
 
 from pydsr import *
+
 
 # If RoboComp was compiled with Python bindings you can use InnerModel in Python
 # import librobocomp_qmat
@@ -57,6 +51,7 @@ from pydsr import *
 
 class SpecificWorker(GenericWorker):
     update_ui_signal = Signal()
+
     def __init__(self, proxy_map, startup_check=False):
         super(SpecificWorker, self).__init__(proxy_map)
         self.Period = 2000
@@ -95,14 +90,6 @@ class SpecificWorker(GenericWorker):
             "game_over": pygame.mixer.Sound('src/game_over.wav'),
         }
 
-        self.NUM_LEDS = 54
-        self.nombre = ""
-        self.dificultad = ""
-        self.intentos = 0
-        self.running = False
-        self.respuesta = []
-        self.rondas = ""
-
         self.ayuda = False
         self.archivo_csv = "../../users_info.csv"
 
@@ -111,37 +98,8 @@ class SpecificWorker(GenericWorker):
         self.ui3 = self.load_check()
         self.ui4 = self.comenzar_checked()
 
-        self.boton = False
-        self.reiniciar = False
-        self.gameOver = False
-        self.start_time = None
-        self.end_time = None
-        self.elapsed_time = None
-
-        self.rondas_complet = 0
-        self.fecha = 0
-        self.hora = 0
-        self.fallos = 0
-
-        self.v1 = 2
-        self.v2 = 1
-
-        self.start_question_time = None
-        self.end_question_time = 0
-        self.response_time = 0
-        self.responses_times = []
-        self.media = 0
-        self.puntuacion = 1000
-
-        # Atributos para el seguimiento en tiempo real:
-        self.racha = 0           # Racha actual de aciertos.
-        self.fallo_detectado = False  # Bandera para indicar si hubo fallo reciente.
-
-        ########## DEFINICIÓN DEL DATAFRAME DONDE SE ALMACENAN LOS DATOS ##########
-        self.df = pd.DataFrame(columns=[
-            "Nombre", "Intentos", "Rondas", "Dificultad", "Fecha", "Hora",
-            "Rondas completadas", "Fallos", "Tiempo transcurrido (min)", "Tiempo transcurrido (seg)", "Tiempo medio respuesta (seg):", "Puntuación"
-        ])
+        self.NUM_LEDS = 54
+        self.reiniciar_variables()
 
         ########## CARGAR BATERÍA DE RESPUESTAS ##########
         with open("src/bateria_respuestas.json", "r", encoding="utf-8") as file:
@@ -181,7 +139,8 @@ class SpecificWorker(GenericWorker):
         self.update_ui_signal.connect(self.on_update_ui)
 
     ########## FUNCIÓN PARA AGREGAR LOS DATOS RECOGIDOS AL DATAFRAME ##########
-    def agregar_resultados(self, nombre, intentos, rondas, dificultad, fecha, hora, rondas_completadas, fallos, tiempo_transcurrido_min, tiempo_transcurrido_seg, tiempo_medio_respuesta, puntuacion):
+    def agregar_resultados(self, nombre, intentos, rondas, dificultad, fecha, hora, rondas_completadas, fallos,
+                           tiempo_transcurrido_min, tiempo_transcurrido_seg, tiempo_medio_respuesta, puntuacion):
         # Crea un diccionario con los datos nuevos
         nuevo_resultado = {
             "Nombre": nombre,
@@ -203,7 +162,6 @@ class SpecificWorker(GenericWorker):
 
         # Agrega la nueva fila al DataFrame existente
         self.df = pd.concat([self.df, nuevo_df], ignore_index=True)
-
 
     def __del__(self):
         """Destructor"""
@@ -245,9 +203,9 @@ class SpecificWorker(GenericWorker):
         rondas = self.rondas
 
         while i < int(rondas) and self.running:
-            self.speech_proxy.say(self.elegir_respuesta(self.bateria_rondas_actual, ronda= i+1), False)
+            self.speech_proxy.say(self.elegir_respuesta(self.bateria_rondas_actual, ronda=i + 1), False)
             print(f"Ronda número {i + 1}")
-            self.rondas_complet = i+1
+            self.rondas_complet = i + 1
             self.RT_adjust()
             self.terminaHablar()
             self.random_color()
@@ -287,7 +245,8 @@ class SpecificWorker(GenericWorker):
         self.boton = False
         self.media = sum(self.responses_times) / len(self.responses_times)
         self.calc_new_score("gana")
-        self.agregar_resultados(self.nombre, self.intentos, self.rondas, self.dificultad, self.fecha, self.hora, self.rondas_complet, self.fallos, minutes, seconds, self.media, self.puntuacion)
+        self.agregar_resultados(self.nombre, self.intentos, self.rondas, self.dificultad, self.fecha, self.hora,
+                                self.rondas_complet, self.fallos, minutes, seconds, self.media, self.puntuacion)
         time.sleep(0.5)
         self.send_to_csv_manager()
         self.guardar_resultados()
@@ -303,17 +262,17 @@ class SpecificWorker(GenericWorker):
         self.color_aleatorio.append(color)
 
     ########## FUNCIÓN PARA ENCENDER LAS LUCES LEDS ##########
-    def encender_LEDS(self,color):
+    def encender_LEDS(self, color):
         if color == "rojo" and self.gameOver:
             self.sounds["game_over"].play()
         elif color in self.sounds:
             pygame.mixer.stop()
             self.sounds[color].play()
-        if color== "negro":
+        if color == "negro":
             self.set_all_LEDS_colors(0, 0, 0, 0)
         elif color == "rojo":
             self.set_all_LEDS_colors(255, 0, 0, 0)
-        elif color== "verde":
+        elif color == "verde":
             self.set_all_LEDS_colors(0, 255, 0, 0)
         elif color == "azul":
             self.set_all_LEDS_colors(0, 0, 255, 0)
@@ -329,18 +288,19 @@ class SpecificWorker(GenericWorker):
         self.ledarray_proxy.setLEDArray(pixel_array)
 
     ########## INTRODUCCIÓN AL JUEGO  ##########
-    def introduccion (self):
+    def introduccion(self):
 
         QApplication.processEvents()
 
         # Introducción al juego
         self.emotionalmotor_proxy.expressJoy()
         self.speech_proxy.say(f"Hola {self.nombre}, vamos a jugar a Simón Dice.", False)
-        print (f"Hola {self.nombre}, vamos a jugar a Simón Dice.")
+        print(f"Hola {self.nombre}, vamos a jugar a Simón Dice.")
 
-        self.speech_proxy.say("Simón Dice es un juego de memoria en el que debes repetir la secuencia de colores que se ilumina. ", False)
+        self.speech_proxy.say(
+            "Simón Dice es un juego de memoria en el que debes repetir la secuencia de colores que se ilumina. ", False)
         print("Simón Dice es un juego de memoria en el que debes repetir la secuencia de colores que se ilumina. ")
-        self.speech_proxy.say ("¿Quieres que te explique el juego?", False)
+        self.speech_proxy.say("¿Quieres que te explique el juego?", False)
         print("¿Quieres que te explique el juego?")
         self.terminaHablar()
 
@@ -352,18 +312,20 @@ class SpecificWorker(GenericWorker):
 
         # Explicación del Juego
         if self.check == "si":
-            self.speech_proxy.say("A medida que avances, la secuencia se volverá más larga, poniendo a prueba tu memoria y concentración. "
-                                  "Cómo jugar: Se mostrará un color en mis luces, por ejemplo rojo. ", False)
-            print ("A medida que avances, la secuencia se volverá más larga, poniendo a prueba tu memoria y concentración. "
-                                  "Cómo jugar: Se mostrará un color en mis luces, por ejemplo rojo. ")
+            self.speech_proxy.say(
+                "A medida que avances, la secuencia se volverá más larga, poniendo a prueba tu memoria y concentración. "
+                "Cómo jugar: Se mostrará un color en mis luces, por ejemplo rojo. ", False)
+            print(
+                "A medida que avances, la secuencia se volverá más larga, poniendo a prueba tu memoria y concentración. "
+                "Cómo jugar: Se mostrará un color en mis luces, por ejemplo rojo. ")
             self.terminaHablar()
             self.set_all_LEDS_colors(255, 0, 0, 0)
             sleep(1)
-            self.set_all_LEDS_colors(0,0,0,0)
+            self.set_all_LEDS_colors(0, 0, 0, 0)
             self.speech_proxy.say("Deberás introducir ese mismo color. "
                                   "Al acertar, añadiré otro color a la secuencia, por ejemplo rojo + azul). ", False)
             print("Deberás introducir ese mismo color. "
-                                  "Al acertar, añadiré otro color a la secuencia, por ejemplo rojo + azul). ")
+                  "Al acertar, añadiré otro color a la secuencia, por ejemplo rojo + azul). ")
             self.terminaHablar()
             self.set_all_LEDS_colors(255, 0, 0, 0)
             sleep(1)
@@ -373,9 +335,10 @@ class SpecificWorker(GenericWorker):
             sleep(1)
             self.set_all_LEDS_colors(0, 0, 0, 0)
             self.speech_proxy.say("Ahora debes repetir ambos en el orden correcto. "
-                                  "Con cada turno, la secuencia crece y debes recordar cada color en el orden correcto.", False)
+                                  "Con cada turno, la secuencia crece y debes recordar cada color en el orden correcto.",
+                                  False)
             print("Ahora debes repetir ambos en el orden correcto. "
-                                  "Con cada turno, la secuencia crece y debes recordar cada color en el orden correcto.")
+                  "Con cada turno, la secuencia crece y debes recordar cada color en el orden correcto.")
 
         # Prueba de juego
         self.speech_proxy.say("¿Quieres hacer una prueba?", False)
@@ -391,10 +354,12 @@ class SpecificWorker(GenericWorker):
             self.prueba()
         if self.check == "no":
             if int(self.intentos) == 1:
-                self.speech_proxy.say("Vamos a ver cuánto tiempo eres capaz de seguir la secuencia sin equivocarte", False)
+                self.speech_proxy.say("Vamos a ver cuánto tiempo eres capaz de seguir la secuencia sin equivocarte",
+                                      False)
                 print("Vamos a ver cuánto tiempo eres capaz de seguir la secuencia sin equivocarte")
             elif int(self.intentos) > 1:
-                self.speech_proxy.say(f"""Tienes un número limitado de intentos. Si te equivocas en algún color {self.intentos}
+                self.speech_proxy.say(
+                    f"""Tienes un número limitado de intentos. Si te equivocas en algún color {self.intentos}
                                         veces antes de completar la secuencia, el juego terminará.""", False)
                 print(f"""Tienes un número limitado de intentos. Si te equivocas en algún color {self.intentos}
                                         veces antes de completar la secuencia, el juego terminará.""")
@@ -406,94 +371,109 @@ class SpecificWorker(GenericWorker):
         self.centrar_ventana(self.ui4)
         self.ui4.show()
         self.ui4.exec_()
-        self.start_time =time.time()
+        self.start_time = time.time()
         self.fecha = datetime.now().strftime("%d-%m-%Y")
         self.hora = datetime.now().strftime("%H:%M:%S")
 
-    ########## FUNCIÓN PARA OBTENER LA RESPUESTA  ##########
+    ########## FUNCIONES AUXILIARES ##########
+    def manejar_fallo(self):
+        self.intent += 1
+        self.restantes = int(self.intentos) - int(self.intent)
+
+        if self.restantes > 1:
+            mensaje = f"Respuesta incorrecta. {self.elegir_respuesta(self.bateria_fallos)}. Te quedan {self.restantes} intentos."
+        elif self.restantes == 1:
+            mensaje = f"Respuesta incorrecta. {self.elegir_respuesta(self.bateria_fallos)}. Este es tu último intento."
+        else:
+            mensaje = "Respuesta incorrecta, no te quedan más intentos."
+
+        self.speech_proxy.say(mensaje, False)
+        self.cerrar_ui(1)
+        self.terminaHablar()
+        self.fallos += 1
+
+    def game_over(self):
+        self.end_time = time.time()
+        self.elapsed_time = self.end_time - self.start_time
+        self.media = sum(self.responses_times) / len(self.responses_times)
+        minutes = int(self.elapsed_time // 60)
+        seconds = int(self.elapsed_time % 60)
+        rondas = int(self.rondas_complet) - 1
+
+        print("Game Over")
+        self.speech_proxy.say(self.elegir_respuesta(self.bateria_fin_juego), False)
+        print(f"Juego terminado. Tiempo transcurrido: {minutes} minutos y {seconds} segundos.")
+        self.terminaHablar()
+        self.fantasia_color()
+        self.running = False
+        self.boton = False
+        self.calc_new_score("pierde")
+        self.agregar_resultados(
+            self.nombre, self.intentos, self.rondas, self.dificultad, self.fecha,
+            self.hora, rondas, self.fallos, minutes, seconds, self.media, self.puntuacion
+        )
+        time.sleep(0.5)
+        self.send_to_csv_manager()
+        self.guardar_resultados()
+        self.gestorsg_proxy.LanzarApp()
+
+    def mostrar_secuencia(self):
+        self.respuesta = []
+        self.terminaHablar()
+        print(self.color_aleatorio)
+        for color in self.color_aleatorio:
+            self.encender_LEDS(color)
+            sleep(self.v1)
+            self.encender_LEDS("negro")
+            sleep(self.v2)
+
+    ########## FUNCIÓN REFACTORIZADA PARA OBTENER LA RESPUESTA ##########
+
     def get_respuesta(self):
         self.respuesta = []
         self.intent = 0
-        
+
         if self.start_question_time is None:
             self.start_question_time = time.time()
 
         print("Introduce la secuencia de colores uno a uno")
 
-        # Inicio de la ronda, aparecen los 4 botones.
-        while len(self.respuesta) < len(self.color_aleatorio) and self.running is True:
-            # Mostrar la interfaz gráfica con botones
+        while len(self.respuesta) < len(self.color_aleatorio) and self.running:
+            # Mostrar la interfaz gráfica
             self.centrar_ventana(self.ui)
             self.ui.show()
             QApplication.processEvents()
 
             self.emotionalmotor_proxy.expressJoy()
-            # Verifica si la respuesta es correcta hasta el momento, cada pulsado de botón.
+
+            # Verificar respuestas
+            fallo = False
             for idx in range(len(self.respuesta)):
                 if self.respuesta[idx] != self.color_aleatorio[idx]:
-                    self.intent += 1
-                    self.restantes = int(self.intentos) - int(self.intent)
-                    if self.restantes > 1:
-                        self.speech_proxy.say(
-                            f"Respuesta incorrecta. {self.elegir_respuesta(self.bateria_fallos)} .Te quedan {self.restantes} intentos.", False)
-                    elif self.restantes == 1:
-                        self.speech_proxy.say(
-                            f"Respuesta incorrecta. {self.elegir_respuesta(self.bateria_fallos)}.Este es tu último intento.", False)
-                    else:
-                        self.speech_proxy.say(
-                            f"Respuesta incorrecta, no te quedan más intentos.", False)
-
-                    self.cerrar_ui(1)
-                    self.terminaHablar()
-                    self.fallos = self.fallos + 1
-                    if self.restantes <= 0:
-                        self.end_time = time.time()
-                        self.elapsed_time = self.end_time - self.start_time  # Tiempo en segundos
-                        self.media = sum(self.responses_times) / len(self.responses_times)
-                        # Convertir el tiempo a minutos y segundos
-                        minutes = int(self.elapsed_time // 60)
-                        seconds = int(self.elapsed_time % 60)
-                        rondas = int(self.rondas_complet) - 1
-                        print("Game Over")
-                        self.speech_proxy.say(self.elegir_respuesta(self.bateria_fin_juego), False)
-                        print(f"Juego terminado. Tiempo transcurrido: {minutes} minutos y {seconds} segundos.")
-                        self.terminaHablar()
-                        self.fantasia_color()
-                        self.running = False
-                        self.boton = False
-                        self.calc_new_score("pierde")
-                        self.agregar_resultados(self.nombre, self.intentos, self.rondas, self.dificultad, self.fecha, self.hora,
-                                                rondas, self.fallos, minutes, seconds ,self.media, self.puntuacion)
-                        time.sleep(0.5)
-                        self.send_to_csv_manager()
-                        self.guardar_resultados()
-                        self.gestorsg_proxy.LanzarApp()
-                        return
-
-                    self.fallo_detectado = True
-                    print("Fallo: racha reiniciada a 0.")
-                    self.RT_adjust()
-                    print("Mostrando la secuencia nuevamente...")
-                    self.speech_proxy.say("Atención, repito la secuencia.", False)
-                    self.respuesta = []  # Reinicia la respuesta
-                    self.terminaHablar()
-                    print(self.color_aleatorio)
-                    for color in self.color_aleatorio:
-                        self.encender_LEDS(color)
-                        sleep(self.v1)
-                        self.encender_LEDS("negro")
-                        sleep(self.v2)
+                    fallo = True
                     break
-        
-        if self.running is True:
-            self.cerrar_ui(1) # Cierra la ventana cuando el juego termine
+
+            if fallo:
+                self.manejar_fallo()
+                if self.restantes <= 0:
+                    self.game_over()
+                    return
+
+                print("Fallo: racha reiniciada a 0.")
+                self.RT_adjust()
+                print("Mostrando la secuencia nuevamente...")
+                self.speech_proxy.say("Atención, repito la secuencia.", False)
+                self.mostrar_secuencia()
+                continue
+
+        if self.running:
+            self.cerrar_ui(1)
             self.racha += 1
             self.fallo_detectado = False
             print(f"Acierto: racha incrementada a {self.racha}")
             self.speech_proxy.say(self.elegir_respuesta(self.bateria_aciertos), False)
             self.terminaHablar()
             print("Tu respuesta ha sido:", self.respuesta)
-
 
     def fantasia_color(self):
         i = 0
@@ -507,8 +487,8 @@ class SpecificWorker(GenericWorker):
             i += 1
         self.gameOver = False
 
-    def prueba (self):
-        self.speech_proxy.say("¡Genial! Comencemos con la prueba. Vamos a hacer 2 rondas",False)
+    def prueba(self):
+        self.speech_proxy.say("¡Genial! Comencemos con la prueba. Vamos a hacer 2 rondas", False)
 
         print("¡Genial! Comencemos con la prueba. Vamos a hacer 2 rondas")
 
@@ -536,7 +516,7 @@ class SpecificWorker(GenericWorker):
 
         if i == 2:
             self.running = False
-            self.speech_proxy.say ("¡Lo has hecho muy bien!",False)
+            self.speech_proxy.say("¡Lo has hecho muy bien!", False)
             print("¡Lo has hecho muy bien!")
 
     def terminaHablar(self):
@@ -544,11 +524,12 @@ class SpecificWorker(GenericWorker):
         while self.speech_proxy.isBusy():
             pass
 
-                        ########## INTERFACES GRÁFICAS ##########
+            ########## INTERFACES GRÁFICAS ##########
+
     ####################################################################################################################################
 
-    def load_ui (self):
-        #Carga la interfaz desde el archivo .ui
+    def load_ui(self):
+        # Carga la interfaz desde el archivo .ui
         loader = QtUiTools.QUiLoader()
         file = QtCore.QFile("../../igs/simon_botones.ui")
         file.open(QtCore.QFile.ReadOnly)
@@ -556,48 +537,31 @@ class SpecificWorker(GenericWorker):
         file.close()
 
         # Conectar botones a funciones
-        ui.rojo.clicked.connect(self.rojo_clicked)
-        ui.azul.clicked.connect(self.azul_clicked)
-        ui.verde.clicked.connect(self.verde_clicked)
-        ui.amarillo.clicked.connect(self.amarillo_clicked)
-        
+        ui.rojo.clicked.connect(lambda: self.color_clicked("rojo"))
+        ui.azul.clicked.connect(lambda: self.color_clicked("azul"))
+        ui.verde.clicked.connect(lambda: self.color_clicked("verde"))
+        ui.amarillo.clicked.connect(lambda: self.color_clicked("amarillo"))
+
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
             self.ui_numbers = {}
-            
-        self.ui_numbers[ui] = 1  
-        ui.installEventFilter(self) 
+
+        self.ui_numbers[ui] = 1
+        ui.installEventFilter(self)
 
         return ui
 
-    def rojo_clicked(self):
-        self.respuesta.append("rojo")
-        self.sounds["rojo"].play()
+    def color_clicked(self, color: str):
+        self.respuesta.append(color)
+        if color in self.sounds:
+            self.sounds[color].play()
         self.register_time_until_pressed()
-        print("Respuesta: Rojo")
+        print(f"Respuesta: {color.capitalize()}")
 
-    def azul_clicked(self):
-        self.respuesta.append("azul")
-        self.sounds["azul"].play()
-        self.register_time_until_pressed()
-        print("Respuesta: Azul")
-
-    def verde_clicked(self):
-        self.respuesta.append("verde")
-        self.sounds["verde"].play()
-        self.register_time_until_pressed()
-        print("Respuesta: Verde")
-
-    def amarillo_clicked(self):
-        self.respuesta.append("amarillo")
-        self.sounds["amarillo"].play()
-        self.register_time_until_pressed()
-        print("Respuesta: Amarillo")
-    
     def register_time_until_pressed(self):
         if self.end_question_time is None:
             self.end_question_time = time.time()
-        
+
         self.response_time = self.end_question_time - self.start_question_time
         if self.response_time < 0.00001:
             print("Error, valor no almacenado")
@@ -609,15 +573,15 @@ class SpecificWorker(GenericWorker):
 
         if self.start_question_time is None:
             self.start_question_time = time.time()
-        
+
         print("------------------------------")
         print(f"Tiempo de respuesta: {self.response_time}")
         print("------------------------------")
 
     ####################################################################################################################################
 
-    def therapist_ui (self):
-        #Cargar interfaz
+    def therapist_ui(self):
+        # Cargar interfaz
         loader = QtUiTools.QUiLoader()
         file = QtCore.QFile("../../igs/simon_menu.ui")
         file.open(QtCore.QFile.ReadOnly)
@@ -643,9 +607,9 @@ class SpecificWorker(GenericWorker):
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
             self.ui_numbers = {}
-            
-        self.ui_numbers[ui] = 2  
-        ui.installEventFilter(self) 
+
+        self.ui_numbers[ui] = 2
+        ui.installEventFilter(self)
         return ui
 
     def ayuda_clicked(self):
@@ -671,12 +635,10 @@ class SpecificWorker(GenericWorker):
             print(f"Error al leer el CSV: {e}")
         ui.comboBox_user.addItems(opciones)
 
-
     def therapist(self):
         # Obtiene los valores ingresados en los campos
         self.nombre = self.ui2.usuario.toPlainText()
         self.primer_partida()
-
 
     def primer_partida(self):
         self.intentos = 2
@@ -696,18 +658,17 @@ class SpecificWorker(GenericWorker):
         print(f"Dificultad: {self.dificultad}")
         print("Valores confirmados. Juego listo para comenzar.")
         self.boton = True
-        self.fallos = 0 # Reinicia contador al empezar juego
+        self.fallos = 0  # Reinicia contador al empezar juego
         self.sounds["click"].play()
         self.cerrar_ui(2)
         self.ui2.usuario.clear()
         self.introduccion()
         self.procesoJuego()
 
-
     def automatic(self):
+        self.select_user()
         if self.first_game():
-            self.select_user()
-            self.primer_partida()              # ← cámbiala por la tuya
+            self.primer_partida()  # ← cámbiala por la tuya
             return
 
         self.dificultad = "auto"
@@ -728,41 +689,45 @@ class SpecificWorker(GenericWorker):
         self.ui2.usuario.clear()
 
         self.emotionalmotor_proxy.expressJoy()
-        self.speech_proxy.say(f"Hola {self.nombre}, vamos a jugar a Simón Dice. Recuerda repetir las luces en el orden en el que aparezcan. Jugaremos {self.rondas} rondas, con 2 intentos por ronda.¡Comencemos con el juego!", False)
+        self.speech_proxy.say(
+            f"Hola {self.nombre}, vamos a jugar a Simón Dice. Recuerda repetir las luces en el orden en el que aparezcan. Jugaremos {self.rondas} rondas, con 2 intentos por ronda.¡Comencemos con el juego!",
+            False)
         self.terminaHablar()
 
         self.centrar_ventana(self.ui4)
         self.ui4.show()
         self.ui4.exec_()
-        self.start_time =time.time()
+        self.start_time = time.time()
         self.fecha = datetime.now().strftime("%d-%m-%Y")
         self.hora = datetime.now().strftime("%H:%M:%S")
 
         self.procesoJuego()
 
     def first_game(self) -> bool:
-        """
-        Devuelve True si el usuario no tiene todavía un número de partidas
-        registrado en users_info.csv (columna 'num_partidas' vacía o None).
-        En cualquier otro caso devuelve False.
-        """
         try:
             with CSV_PATH.open(newline="", encoding="utf-8") as f:
-                lector = csv.DictReader(f)
+                lector = csv.DictReader(f, delimiter=";")
+                user_nombre = (self.nombre or "").strip().lower()
+
                 for fila in lector:
-                    if fila.get("nombre") == self.nombre:
+                    print("DEBUG fila CSV:", fila)
+                    csv_nombre = (fila.get("nombre") or "").strip().lower()
+                    if csv_nombre == user_nombre:
                         num = fila.get("num_partidas")
+                        print(f"Usuario encontrado: {csv_nombre}, num_partidas = {num}")
                         return (num is None) or (str(num).strip() == "")
         except FileNotFoundError:
-            # Si el CSV no existe consideramos que es el primer juego
             print(f"Advertencia: no se encontró el archivo {CSV_PATH}")
             return True
+        except Exception as e:
+            print(f"Error leyendo CSV en first_game: {e}")
+            return True
 
-        # Si el usuario no está en el CSV, lo tratamos como primer juego
+        print("Usuario no encontrado en CSV")
         return True
 
     ####################################################################################################################################
-    
+
     def load_check(self):
         # Carga la interfaz desde el archivo .ui
         loader = QtUiTools.QUiLoader()
@@ -776,9 +741,9 @@ class SpecificWorker(GenericWorker):
         # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
             self.ui_numbers = {}
-            
-        self.ui_numbers[ui] = 3  
-        ui.installEventFilter(self) 
+
+        self.ui_numbers[ui] = 3
+        ui.installEventFilter(self)
         return ui
 
     def si_clicked(self):
@@ -792,7 +757,7 @@ class SpecificWorker(GenericWorker):
         print("Respuesta: No")
         self.ui3.accept()  # Cierra el diálogo cuando el botón es presionado
         self.sounds["click"].play()
-        
+
     ####################################################################################################################################
 
     def comenzar_checked(self):
@@ -804,22 +769,22 @@ class SpecificWorker(GenericWorker):
         file.close()
         # Conectar botones a funciones
         ui.comenzar.clicked.connect(self.comenzar)
-       # Cerrar con la x
+        # Cerrar con la x
         if not hasattr(self, 'ui_numbers'):
             self.ui_numbers = {}
-            
-        self.ui_numbers[ui] = 4  
-        ui.installEventFilter(self) 
+
+        self.ui_numbers[ui] = 4
+        ui.installEventFilter(self)
         return ui
 
-    def comenzar (self):
+    def comenzar(self):
         self.running = True
         print("¡El juego ha comenzado!")
         self.ui4.accept()  # Cierra el diálogo cuando el botón es presionado
         self.sounds["click"].play()
 
     ####################################################################################################################################
-    
+
     def eventFilter(self, obj, event):
         """ Captura eventos de la UI """
         # Obtener el número de UI asociado al objeto
@@ -842,7 +807,7 @@ class SpecificWorker(GenericWorker):
                     event.ignore()  # Bloquear el cierre
                     return True  # **DETENER la propagación del evento para que no se cierre**
         return False  # Propaga otros eventos normalmente
-    
+
     def cerrar_ui(self, numero):
         ui_nombre = "ui" if numero == 1 else f"ui{numero}"
         ui_obj = getattr(self, ui_nombre, None)
@@ -891,39 +856,30 @@ class SpecificWorker(GenericWorker):
         self.nombre = ""
         self.dificultad = ""
         self.intentos = 0
+
         self.running = False
         self.respuesta = []
         self.rondas = ""
-        
-        self.boton = False
-        self.reiniciar = False
-        self.gameOver = False
-        self.start_time = None
-        self.end_time = None
-        self.elapsed_time = None
+        self.boton = self.reiniciar = self.gameOver = False
 
-        self.rondas_complet = 0
-        self.fecha = 0
-        self.hora = 0
-        self.fallos = 0
-
-        self.v1 = 2
-        self.v2 = 1
-
-        self.start_question_time = None
-        self.end_question_time = 0
-        self.response_time = 0
+        self.start_time = self.end_time = self.elapsed_time = None
+        self.start_question_time = self.end_question_time = self.response_time = 0
         self.responses_times = []
         self.media = 0
-        self.puntuacion = 1000
 
-        # Atributos para el seguimiento en tiempo real:
-        self.racha = 0           # Racha actual de aciertos.
-        self.fallo_detectado = False  # Bandera para indicar si hubo fallo reciente.
+        self.rondas_complet = 0
+        self.fallos = 0
+        self.racha = 0
+        self.fallo_detectado = False
+
+        self.v1, self.v2 = 2, 1
+
+        self.puntuacion = 1000
 
         self.df = pd.DataFrame(columns=[
             "Nombre", "Intentos", "Rondas", "Dificultad", "Fecha", "Hora",
-            "Rondas completadas", "Fallos", "Tiempo transcurrido (min)", "Tiempo transcurrido (seg)", "Tiempo medio respuesta (seg):", "Puntuación"
+            "Rondas completadas", "Fallos", "Tiempo transcurrido (min)",
+            "Tiempo transcurrido (seg)", "Tiempo medio respuesta (seg):", "Puntuación"
         ])
 
     def calc_new_score(self, resultado):
@@ -941,7 +897,7 @@ class SpecificWorker(GenericWorker):
         rondas_totales = int(self.rondas)
         fallos_totales = int(self.fallos)
 
-        D_min = 31/20
+        D_min = 31 / 20
         D_max = 31.5
 
         node = self.g.get_node("Simon Say")
@@ -962,7 +918,8 @@ class SpecificWorker(GenericWorker):
         print(f"Porcentaje de rondas completadas: {ratio}")
 
         # 1) Score real (S)
-        origS = (rondas_completadas / rondas_totales) - (0.1 * (fallos_totales / (rondas_totales * 2))) if rondas_totales != 0 else 0.0
+        origS = (rondas_completadas / rondas_totales) - (
+                    0.1 * (fallos_totales / (rondas_totales * 2))) if rondas_totales != 0 else 0.0
         # print(f"Score real S: {S}")
 
         if ratio >= 0.75:
@@ -972,8 +929,8 @@ class SpecificWorker(GenericWorker):
         print(f"Score ajustado S: {S}")
 
         # 2) Ajustamos tiempos para evitar dividir por cero
-        t_on= self.v1 if self.v1 > 0 else 1e-9
-        t_off = self.v2  if self.v2  > 0 else 1e-9
+        t_on = self.v1 if self.v1 > 0 else 1e-9
+        t_off = self.v2 if self.v2 > 0 else 1e-9
 
         # 3) Dificultad bruta (D)
         D = (1.0 / t_on + 1.0 / t_off) + w * (rondas_totales / 15.0)
@@ -984,9 +941,8 @@ class SpecificWorker(GenericWorker):
         print(f"Dificultad normalizada E: {E}")
 
         # 5) Factor K para la partida (K_partida)
-        K_game= K_min + (K_max - K_min) * math.exp(-alpha * (partida_actual - 1))
+        K_game = K_min + (K_max - K_min) * math.exp(-alpha * (partida_actual - 1))
         print(f"Valor de K Game: {K_game}")
-
 
         # 6) Nueva puntuación
         if actual_score == "":
@@ -1068,8 +1024,6 @@ class SpecificWorker(GenericWorker):
     def compute(self):
 
         return True
-
-
 
     def startup_check(self):
         print(f"Testing RoboCompCameraSimple.TImage from ifaces.RoboCompCameraSimple")
@@ -1201,7 +1155,6 @@ class SpecificWorker(GenericWorker):
         self.v1 = self.v_values[nivel_temporal]["v_on"]
         print(f"Valores actualizados: v_off = {self.v2}, v_on = {self.v1}")
 
-
     # =============== Methods for Component Implements ==================
     # ===================================================================
 
@@ -1209,7 +1162,7 @@ class SpecificWorker(GenericWorker):
     # IMPLEMENTATION of StartGame method from JuegoSimonSay interface
     #
     def JuegoSimonSay_StartGame(self):
-        self.set_all_LEDS_colors(255,0,0,0)
+        self.set_all_LEDS_colors(255, 0, 0, 0)
         self.update_ui_signal.emit()
         # pass
 
@@ -1225,9 +1178,9 @@ class SpecificWorker(GenericWorker):
         self.ui2.raise_()
         self.ui2.show()
         QApplication.processEvents()
-    # ===================================================================
-    # ===================================================================
 
+    # ===================================================================
+    # ===================================================================
 
     ######################
     # From the RoboCompCameraSimple you can call this methods:
@@ -1268,13 +1221,13 @@ class SpecificWorker(GenericWorker):
     # self.speech_proxy.isBusy(...)
     # self.speech_proxy.say(...)
 
-
     # =============== DSR SLOTS  ================
     # =============================================
 
     def update_node_att(self, id: int, attribute_names: [str]):
 
         pass
+
     def update_node(self, id: int, type: str):
         console.print(f"UPDATE NODE: {id} {type}", style='green')
 

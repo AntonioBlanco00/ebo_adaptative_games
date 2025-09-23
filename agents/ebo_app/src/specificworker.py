@@ -90,7 +90,7 @@ class SpecificWorker(GenericWorker):
     def __init__(self, proxy_map, startup_check=False):
         super(SpecificWorker, self).__init__(proxy_map)
         self.Period = 2000
-        self.NUM_LEDS = 52
+        self.NUM_LEDS = 54
         if startup_check:
             self.startup_check()
         else:

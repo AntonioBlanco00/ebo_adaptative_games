@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=EBO_adaptative
+Comment=Lanzar EBO Adaptative Games
+Exec=/ABSOLUTE/PATH/TO/auto_launch.sh
+Icon=/ABSOLUTE/PATH/TO/icon.pmg
+Terminal=true
+StartupNotify=false
+Categories=Utility;
+

@@ -28,11 +28,14 @@ from genericworker import *
 from time import sleep
 import interfaces as ifaces
 import subprocess
+from pathlib import Path
+import shlex
 
 sys.path.append('/opt/robocomp/lib')
 console = Console(highlight=False)
 
 from pydsr import *
+from config_ips import lanzar_gui_configuracion
 
 
 # If RoboComp was compiled with Python bindings you can use InnerModel in Python
@@ -67,24 +70,18 @@ class SpecificWorker(GenericWorker):
             self.timer.timeout.connect(self.compute)
             self.timer.start(self.Period)
 
-        self.ui = self.v_principal()
-
-        self.juego_seleccionado = False
-
-        self.ultimo_estado = None
-
-        self.GestorSG_LanzarApp()
-
 
     def __del__(self):
         """Destructor"""
 
     def setParams(self, params):
-        # try:
-        #	self.innermodel = InnerModel(params["InnerModelPath"])
-        # except:
-        #	traceback.print_exc()
-        #	print("Error reading config params")
+        self.juego_seleccionado = False
+        self.ultimo_estado = None
+        self.ebo_listo = False
+        self.ip = params["ip"]
+        self.ui = self.v_principal()
+        self.GestorSG_LanzarApp()
+
         return True
 
 
@@ -92,7 +89,6 @@ class SpecificWorker(GenericWorker):
     def compute(self):
         # Verificamos el estado actual y lo comparamos con el último impreso
         if self.juego_seleccionado is False and self.ui.isVisible() is False:
-            # self.GestorSG_LanzarApp()
             estado_actual = "Relanzando APP"
         elif self.juego_seleccionado is True and self.ui.isVisible() is False:
             estado_actual = "Juego en Curso"
@@ -132,11 +128,14 @@ class SpecificWorker(GenericWorker):
         ui.story_button.clicked.connect(self.story_clicked)
         ui.simon_button.clicked.connect(self.simon_clicked)
         ui.pasapalabra_button.clicked.connect(self.pasapalabra_clicked)
+        ui.ip_button.clicked.connect(self.configurar_ip)
 
         ui.ayuda.hide()
         ui.ayuda_button.clicked.connect(self.ayuda_clicked)
 
         ui.resultados_button.clicked.connect(self.ejecutar_script)
+
+        self.verificar_ping(ui.cuadradito)
         
         # Asegurar que el diccionario de UIs existe
         if not hasattr(self, 'ui_numbers'):
@@ -161,37 +160,84 @@ class SpecificWorker(GenericWorker):
         except subprocess.CalledProcessError as e:
             QMessageBox.critical(self, "Error", f"Hubo un error al generar los resultados:\n{e}")
 
+    def configurar_ip(self):
+        ruta_actual = os.getcwd()
+        ruta_base = os.path.dirname(ruta_actual)
+        resultado = lanzar_gui_configuracion(ruta_base)
+
+        if resultado.get("ok"):
+            print("La IP se ha cambiado correctamente. Reiniciando los juegos para aplicar los cambios.")
+            self.relanzar_app()
+
+        else:
+            print("No se cambió la IP. No se realizará ninguna acción.")
+
+    def verificar_ping(self, indicador: QFrame):
+        print("COMPROBANDO PING en " + self.ip)
+        try:
+            resultado = subprocess.run(
+                ["ping", "-c", "1", self.ip],  # Linux/Mac
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            if resultado.returncode == 0:
+                indicador.setStyleSheet("background-color: green; border: 1px solid black;")
+                self.ebo_listo = True
+            else:
+                indicador.setStyleSheet("background-color: red; border: 1px solid black;")
+                self.ebo_listo = False
+        except Exception:
+            indicador.setStyleSheet("background-color: red; border: 1px solid black;")
+
     def story_clicked(self):
-        self.ui.removeEventFilter(self) # Desactivamos y activamos el eventfilter antes y despues de cerrar la ventana para que no se raye
-        self.ui.close()
-        self.ui.installEventFilter(self)
-        
-        self.juego_seleccionado = True
-        self.storytelling_proxy.StartGame()
+        if self.ebo_listo:
+            self.ui.removeEventFilter(
+                self)  # Desactivamos y activamos el eventfilter antes y despues de cerrar la ventana para que no se raye
+            self.ui.close()
+            self.ui.installEventFilter(self)
 
+            self.juego_seleccionado = True
+            self.storytelling_proxy.StartGame()
 
+        else:
+            QMessageBox.warning(
+                self.ui,  # parent
+                "Advertencia",  # título de la ventana
+                "Por favor, configura la IP de ebo."  # mensaje
+            )
 
     def simon_clicked(self):
-        self.game_selected_dsr("Simon Say")
-        self.ui.removeEventFilter(self)
-        self.ui.close()
-        self.ui.installEventFilter(self)
-        
-        self.juego_seleccionado = True
-        self.juegosimonsay_proxy.StartGame()
+        if self.ebo_listo:
+            self.game_selected_dsr("Simon Say")
+            self.ui.removeEventFilter(self)
+            self.ui.close()
+            self.ui.installEventFilter(self)
 
-
+            self.juego_seleccionado = True
+            self.juegosimonsay_proxy.StartGame()
+        else:
+            QMessageBox.warning(
+                self.ui,  # parent
+                "Advertencia",  # título de la ventana
+                "Por favor, configura la IP de ebo."  # mensaje
+            )
 
     def pasapalabra_clicked(self):
-        self.game_selected_dsr("Pasapalabra")
-        self.ui.removeEventFilter(self)
-        self.ui.close()
-        self.ui.installEventFilter(self)
-        
-        self.juego_seleccionado = True
-        self.pasapalabra_proxy.StartGame()
+        if self.ebo_listo:
+            self.game_selected_dsr("Pasapalabra")
+            self.ui.removeEventFilter(self)
+            self.ui.close()
+            self.ui.installEventFilter(self)
 
-    
+            self.juego_seleccionado = True
+            self.pasapalabra_proxy.StartGame()
+        else:
+            QMessageBox.warning(
+                self.ui,  # parent
+                "Advertencia",  # título de la ventana
+                "Por favor, configura la IP de ebo."  # mensaje
+            )
+
     ####################################################################################################################################
     
     def eventFilter(self, obj, event):
@@ -210,8 +256,8 @@ class SpecificWorker(GenericWorker):
                 )
                 if respuesta == QMessageBox.Yes:
                     print(f"Ventana {ui_number} cerrada por el usuario.")
-                    subprocess.run(["python3", "../reiniciar.py"])
-                    return False  # Permitir el cierre
+                    self.matar_yakuake()
+
                 else:
                     print(f"Cierre de la ventana {ui_number} cancelado.")
                     event.ignore()  # Bloquear el cierre
@@ -219,6 +265,41 @@ class SpecificWorker(GenericWorker):
 
         return False  # Propaga otros eventos normalmente
 
+    def matar_yakuake(self, kill_konsole=False):
+        try:
+            # Intento limpio
+            subprocess.run(["pkill", "-TERM", "-x", "yakuake"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            sleep(0.5)
+            # A la fuerza si sigue
+            subprocess.run(["pkill", "-KILL", "-x", "yakuake"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+            if kill_konsole:
+                subprocess.run(["pkill", "-KILL", "-x", "konsole"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            return True
+        except Exception as e:
+            print(f"[matar_yakuake] Error: {e}")
+            return False
+
+    def relanzar_app(self, script_rel='../../../auto_launch.sh', keep_open=False):
+        try:
+            base_dir = Path(__file__).resolve().parent
+            script_path = (base_dir / script_rel).resolve()
+            if not script_path.exists():
+                print(f"[auto_launch] No se encontró el script en {script_path}")
+                return False
+
+            cmd = f'cd {shlex.quote(str(script_path.parent))} && chmod +x {shlex.quote(script_path.name)} && bash {shlex.quote(script_path.name)}'
+            if keep_open:
+                cmd += ' ; exec bash'  # solo si quieres dejar la terminal abierta
+
+            subprocess.Popen(["gnome-terminal", "--", "bash", "-lc", cmd])
+            return True
+        except Exception as e:
+            print(f"[auto_launch] Error al lanzar gnome-terminal / ejecutar script: {e}")
+            return False
 
     ####################################################################################################################################
 
