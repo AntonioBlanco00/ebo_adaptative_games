@@ -29,7 +29,7 @@ sys.path.append('/opt/robocomp/lib')
 console = Console(highlight=False)
 
 from pydsr import *
-import openai
+from openai import OpenAI
 from dotenv import find_dotenv, load_dotenv
 import time
 import logging
@@ -73,7 +73,13 @@ class SpecificWorker(GenericWorker):
 
         load_dotenv()
 
-        self.client = openai.OpenAI()
+        self.client = OpenAI()
+        self.history = []  # memoria de turnos (user/assistant)
+        self.model_fast = os.getenv("OPENAI_FAST_MODEL", "gpt-4o-mini")  # Fase A
+        self.model_full = os.getenv("OPENAI_FULL_MODEL", "gpt-4o-mini")  # Fase B
+        self.phase_a_params = {"temperature": 0.2, "max_tokens": 24}
+        self.phase_b_params = {"temperature": 0.6, "max_tokens": 800}
+
         self.conversacion_en_curso = False
         self.asisstantName  = ""
         self.userInfo = ""
@@ -81,17 +87,149 @@ class SpecificWorker(GenericWorker):
         self.effect_event = threading.Event()
         self.effect_thread = None  # Variable para almacenar el hilo del efecto
 
+        self._turn_t0 = None
+        self._first_speak_ts = None
+        self._tts_started = False
 
     def __del__(self):
         """Destructor"""
 
     def setParams(self, params):
         # try:
-        #	self.innermodel = InnerModel(params["InnerModelPath"])
-        # except:
-        #	traceback.print_exc()
-        #	print("Error reading config params")
+
         return True
+
+    def _speak(self, text: str):
+        if text and text.strip():
+            # Parar el spinner SOLO la primera vez que vamos a hablar en el turno
+            try:
+                if not self._tts_started and self.effect_thread is not None and self.effect_thread.is_alive():
+                    self.stop_rotating_effect()
+                    self._tts_started = True
+            except Exception:
+                pass
+
+            # TTPA: registra la primera vez que hablamos
+            if self._first_speak_ts is None and self._turn_t0 is not None:
+                self._first_speak_ts = time.perf_counter()
+                ttpa = self._first_speak_ts - self._turn_t0
+                print(f"[TTPA] Tiempo hasta primer audio: {ttpa:.3f} s")
+
+            # Ahora habla
+            self.speech_proxy.say(text.strip(), False)
+
+    def _emit_sentences_progressively(self, buffer: str) -> str:
+        parts = re.split(r'(?<=[\.\?\!])\s+', buffer)
+        for sent in parts[:-1]:
+            if sent.strip():
+                self._speak(sent.strip())
+        return parts[-1] if parts else ""
+
+    def llm_stream_reply_single_message(self, user_text: str) -> str:
+        """
+        UNA sola llamada con streaming.
+        - Arranca con frase breve (≤12 palabras) y sigue sin repetirla.
+        - Emite oraciones completas en cuanto cierran.
+        - Al final, extrae la emoción una ÚNICA VEZ del remanente final,
+          no la pronuncia, la guarda en self._last_emotion y devuelve el texto limpio.
+        """
+        # Limpia estado de emoción al iniciar turno
+        self._last_emotion = ""
+
+        runtime_system = (
+            "Empieza con una frase breve (≤12 palabras) que confirme o resuma la intención, "
+            "y continúa de inmediato con los detalles SIN repetir esa primera frase. "
+            "Finaliza SIEMPRE con una sola palabra en minúsculas elegida de {asco, contento, triste, enfado, miedo, sorpresa}. "
+            "No añadas signos de puntuación tras la emoción ni más palabras."
+        )
+
+        inputs = [
+            *self.history,
+            {"role": "system", "content": runtime_system},
+            {"role": "user", "content": user_text},
+        ]
+
+        # Acumulamos lo hablado (sin emoción) y el remanente
+        spoken_parts: list[str] = []
+        remnant = ""
+        first_chunk_spoken = False
+        words_threshold = 12
+        t_first_token = None
+
+        try:
+            with self.client.responses.stream(
+                    model=self.model_full,
+                    input=inputs,
+                    temperature=self.phase_b_params.get("temperature", 0.6),
+                    max_output_tokens=self.phase_b_params.get("max_tokens", 800),
+            ) as stream:
+                for event in stream:
+                    if event.type == "response.output_text.delta":
+                        if t_first_token is None and self._turn_t0 is not None:
+                            t_first_token = time.perf_counter()
+                            print(f"[LLM] Tiempo hasta primer token: {t_first_token - self._turn_t0:.3f} s")
+
+                        delta = getattr(event, "delta", None)
+                        if not isinstance(delta, str):
+                            delta = getattr(getattr(event, "output_text", None), "delta", "")
+                        if not delta:
+                            continue
+
+                        remnant += delta
+
+                        # Disparo de arranque: primera oración cerrada o ≥ N palabras
+                        if not first_chunk_spoken:
+                            parts = re.split(r'(?<=[\.\?\!])\s+', remnant)
+                            if len(parts) > 1 and parts[0].strip():
+                                first = parts[0].strip()
+                                self._speak(first)
+                                spoken_parts.append(first)
+                                first_chunk_spoken = True
+                                remnant = " ".join(parts[1:])
+                                continue
+                            if len(remnant.strip().split()) >= words_threshold:
+                                early = remnant.strip()
+                                self._speak(early)
+                                spoken_parts.append(early)
+                                first_chunk_spoken = True
+                                remnant = ""
+                                continue
+
+                        # Después del arranque: emitir oraciones completas
+                        if first_chunk_spoken:
+                            parts = re.split(r'(?<=[\.\?\!])\s+', remnant)
+                            for sent in parts[:-1]:
+                                s = sent.strip()
+                                if s:
+                                    self._speak(s)
+                                    spoken_parts.append(s)
+                            remnant = parts[-1] if parts else ""
+
+                    elif event.type == "response.error":
+                        print("LLM stream error:", getattr(event, "error", "unknown"))
+                    elif event.type == "response.completed":
+                        break
+
+            # === ÚNICO sitio donde extraemos la emoción ===
+            # No pronunciamos el remanente sin limpiar; primero quitamos la emoción.
+            tail_clean, emo = self._strip_trailing_emotion(remnant)
+            self._last_emotion = emo  # emoción disponible para quien la necesite
+
+            if tail_clean.strip():
+                self._speak(tail_clean.strip())
+                spoken_parts.append(tail_clean.strip())
+
+        except Exception as e:
+            print("Stream error:", e)
+
+        # Texto final limpio (sin emoción) = lo ya hablado + cola limpia
+        assistant_text = " ".join(spoken_parts).strip()
+
+        # Guarda al historial (sin emoción)
+        self.history.append({"role": "user", "content": user_text})
+        self.history.append({"role": "assistant", "content": assistant_text})
+
+        return assistant_text
 
     def set_all_LEDS_colors(self, red=0, green=0, blue=0, white=0):
         pixel_array = {i: ifaces.RoboCompLEDArray.Pixel(red=red, green=green, blue=blue, white=white) for i in
@@ -154,50 +292,175 @@ class SpecificWorker(GenericWorker):
     def startup_check(self):
         QTimer.singleShot(200, QApplication.instance().quit)
 
-    def get_assistant_id_by_name(self, name, filename='src/assistants.txt'):
-        # Reemplazar los espacios en el nombre por barras bajas
-        name_with_underscores = name.replace(" ", "_")
+    def _assistant_name(self) -> str:
+        name = getattr(self, "asisstantName", "") or getattr(self, "assistantName", "")
+        return (name or "EBO").strip()
 
-        # Leer el archivo y buscar el asistente por nombre
-        with open(filename, 'r') as file:
-            for line in file:
-                stored_name, stored_id = line.strip().split(';')
-                if stored_name == name_with_underscores:
-                    return stored_id
-        return None  # Si no se encuentra el asistente
+    def _ebo_repo_root(self):
+        env = os.getenv("EBO_ROOT")
+        if env and os.path.isdir(env):
+            print(f"[PATH] EBO_ROOT={env}")
+            return os.path.abspath(env)
 
-    def wait_for_run_completion(self, client, thread_id, run_id, sleep_interval=1):
-        """
-        Waits for a run to complete and prints the elapsed time.:param client: The OpenAI client object.
-        :param thread_id: The ID of the thread.
-        :param run_id: The ID of the run.
-        :param sleep_interval: Time in seconds to wait between checks.
-        """
-        while True:
-            try:
-                run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
-                if run.completed_at:
-                    elapsed_time = run.completed_at - run.created_at
-                    formatted_elapsed_time = time.strftime(
-                        "%H:%M:%S", time.gmtime(elapsed_time)
-                    )
-                    print(f"Run completed in {formatted_elapsed_time}")
-                    logging.info(f"Run completed in {formatted_elapsed_time}")
-                    # Get messages here once Run is completed!
-                    messages = client.beta.threads.messages.list(thread_id=thread_id)
-                    last_message = messages.data[0]
-                    response = last_message.content[0].text.value
-                    response_final, last_word = self.split_last_word(response)
-                    print(f"Assistant Response: {response_final}")
-                    print(f"Last word: {last_word}")
-                    self.set_emotion(last_word)
-                    self.speech_proxy.say(response_final, False)
-                    break
-            except Exception as e:
-                logging.error(f"An error occurred while retrieving the run: {e}")
+        here = os.path.abspath(__file__)
+        cur = os.path.dirname(here)
+        for _ in range(14):
+            if os.path.isdir(os.path.join(cur, "agents", "ebo_gpt", "profiles")):
+                print(f"[PATH] Repo root autodetectado: {cur}")
+                return cur
+            if os.path.basename(cur).lower() == "ebo_adaptive_games":
+                print(f"[PATH] Repo root por nombre de carpeta: {cur}")
+                return cur
+            parent = os.path.dirname(cur)
+            if parent == cur:
                 break
-            logging.info("Waiting for run to complete...")
-            time.sleep(sleep_interval)
+            cur = parent
+
+        fallback = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        print(f"[PATH][WARN] No se detectó repo root. Fallback: {fallback}")
+        return fallback
+
+    def _resolve_prompt_path(self, name: str, index_rel: str = 'src/assistants.txt') -> str | None:
+        keys = {name, name.replace(" ", "_"), name.replace("_", " ")}
+        repo_root = self._ebo_repo_root()
+        agents_root = os.path.join(repo_root, "agents", "ebo_gpt")
+        profiles_root = os.path.join(agents_root, "profiles")
+
+        # Candidatos de índice (probamos varios sitios razonables)
+        index_candidates = [
+            os.path.join(agents_root, "src", "assistants.txt"),  # esperado
+            os.path.join(os.path.dirname(__file__), "src", "assistants.txt"),
+            os.path.join(os.path.dirname(__file__), "assistants.txt"),
+            os.path.join(profiles_root, "assistants.txt"),  # por si acaso
+        ]
+
+        tried = []
+        for idx in index_candidates:
+            tried.append(idx)
+            if not os.path.exists(idx):
+                continue
+
+            print(f"[LLM] Leyendo índice: {idx}")
+            try:
+                with open(idx, 'r', encoding='utf-8') as f:
+                    for raw in f:
+                        line = raw.strip()
+                        if not line or ';' not in line or line.startswith('#'):
+                            continue
+                        stored_name, stored_value = line.split(';', 1)
+                        if stored_name not in keys:
+                            continue
+
+                        p = stored_value.strip()
+
+                        # 1) Ruta absoluta
+                        if os.path.isabs(p) and os.path.exists(p):
+                            print(f"[LLM] Prompt ABS encontrado (directo): {p}")
+                            return p
+
+                        # 2) Prefijo 'profiles/' bajo agents_root
+                        if p.startswith(("profiles/", "profiles\\")):
+                            cand = os.path.join(agents_root, p)
+                            if os.path.exists(cand):
+                                print(f"[LLM] Prompt encontrado (profiles/ bajo agents): {cand}")
+                                return cand
+
+                        # 3) Relativa al directorio del índice
+                        cand2 = os.path.join(os.path.dirname(idx), p)
+                        if os.path.exists(cand2):
+                            print(f"[LLM] Prompt encontrado (relativo al índice): {cand2}")
+                            return cand2
+
+                        # 4) Solo nombre de archivo -> buscar en profiles_root
+                        cand3 = os.path.join(profiles_root, os.path.basename(p))
+                        if os.path.exists(cand3):
+                            print(f"[LLM] Prompt encontrado (en profiles_root): {cand3}")
+                            return cand3
+
+                        print(f"[LLM][WARN] Entrada coincide '{stored_name}' pero no existe ruta: {p}")
+            except Exception as e:
+                print(f"[LLM][ERR] No se pudo leer {idx}: {e}")
+
+        print(f"[LLM][ERR] No se encontró prompt para '{name}'. Índices probados:")
+        for p in tried:
+            print(f"  - {p}  {'OK' if os.path.exists(p) else 'NO'}")
+        print(f"[LLM][HINT] Confirma que existe: {os.path.join(agents_root, 'src', 'assistants.txt')}")
+        print(f"[LLM][HINT] Y que las líneas son tipo: Nombre;profiles/Nombre.prompt.txt")
+        return None
+
+    def _load_system_prompt_and_params(self, name: str):
+        """
+        Lee el archivo .prompt.txt:
+          - Cabecera opcional con líneas '# clave: valor'
+          - Prompt (lo demás)
+        Devuelve (system_prompt:str, cfg:dict) donde cfg puede tener:
+          fast_model, full_model, temp_a, temp_b, max_tokens_a, max_tokens_b
+        """
+        cfg = {}
+        path = self._resolve_prompt_path(name)
+        print(f"[LLM] Prompt cargado: {path}")
+        if path and os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                lines = f.read().splitlines()
+            body = []
+            for line in lines:
+                m = re.match(r'\s*#\s*(fast_model|full_model|temp_a|temp_b|max_tokens_a|max_tokens_b)\s*:\s*(.+)\s*$',
+                             line)
+                if m:
+                    k, v = m.groups()
+                    v = v.strip()
+                    if k in ("temp_a", "temp_b"):
+                        try:
+                            v = float(v)
+                        except:
+                            pass
+                    elif k in ("max_tokens_a", "max_tokens_b"):
+                        try:
+                            v = int(v)
+                        except:
+                            pass
+                    cfg[k] = v
+                else:
+                    body.append(line)
+            system_prompt = ("\n".join(body)).strip()
+        else:
+            # Si no hay archivo, usa un prompt mínimo
+            system_prompt = f"Eres {name}, un asistente útil. Responde claro y con pasos concretos."
+        return system_prompt, cfg
+
+    def guardar_chat_history(self, folder="conversaciones", filename_prefix="chat"):
+        """
+        Guarda el contenido de self.history en un archivo local legible.
+        """
+        try:
+            os.makedirs(folder, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{filename_prefix}_{timestamp}.txt"
+            filepath = os.path.join(folder, filename)
+
+            def fmt(msg):
+                role = msg.get("role", "?").capitalize()
+                content = msg.get("content", "")
+                return f"{role}: {content}"
+
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("--- Conversación completa ---\n")
+                for m in self.history:
+                    f.write(fmt(m) + "\n")
+                f.write("--- Fin de la conversación ---\n")
+
+            print(f"Conversación guardada en: {filepath}")
+        except Exception as e:
+            print(f"Error al guardar el chat: {e}")
+
+    def _strip_trailing_emotion(self, text: str):
+        pattern = r"(asco|contento|triste|enfado|miedo|sorpresa)[\.\!\?]?\s*$"
+        m = re.search(pattern, text.strip(), re.IGNORECASE)
+        if not m:
+            return text.strip(), ""
+        emo = m.group(1).lower()
+        clean = re.sub(pattern, "", text.strip(), flags=re.IGNORECASE).rstrip()
+        return clean, emo
 
     def split_last_word(self, text):
         text = text.strip().rstrip('.')
@@ -227,50 +490,6 @@ class SpecificWorker(GenericWorker):
         else:
             pass
 
-    def guardar_chat(self, client, thread_id, folder="conversaciones", filename_prefix="chat"):
-        """
-        Guarda todos los mensajes de un hilo en un archivo de texto.
-
-        Args:
-            client: Cliente que interactúa con la API para obtener los mensajes.
-            thread_id: ID del hilo del que se extraen los mensajes.
-            folder: Carpeta donde se guardará el archivo. Por defecto, "conversaciones".
-            filename_prefix: Prefijo para el nombre del archivo. Por defecto, "chat".
-        """
-        try:
-            # Obtener los mensajes del hilo
-            messages = client.beta.threads.messages.list(thread_id=thread_id)
-
-            # Invertir el orden de los mensajes para que estén en orden cronológico
-            chronological_messages = list(reversed(messages.data))
-
-            # Crear una lista con los textos de todos los mensajes
-            all_messages = [
-                f"{message.role.capitalize()}: {message.content[0].text.value}"
-                for message in chronological_messages
-            ]
-
-            # Unir los mensajes en un solo bloque de texto
-            conversation = "\n".join(all_messages)
-
-            # Crear la carpeta si no existe
-            os.makedirs(folder, exist_ok=True)
-
-            # Generar un nombre único para el archivo
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{filename_prefix}_{timestamp}.txt"
-            filepath = os.path.join(folder, filename)
-
-            # Guardar la conversación en el archivo
-            with open(filepath, "w", encoding="utf-8") as file:
-                file.write("--- Conversación completa ---\n")
-                file.write(conversation)
-                file.write("\n--- Fin de la conversación ---\n")
-
-            print(f"Conversación guardada en: {filepath}")
-
-        except Exception as e:
-            print(f"Error al guardar el chat: {e}")
 
     # =============== Methods for Component Implements ==================
     # ===================================================================
@@ -281,29 +500,31 @@ class SpecificWorker(GenericWorker):
     def GPT_continueChat(self, message):
         if message.strip().lower() == "03827857295769204":
             print("Almacenando chat...")
-            self.guardar_chat(self.client, self.thread_id)
-            print("Saliendo del programa...")
+            self.guardar_chat_history(filename_prefix=f"chat_{self._assistant_name()}")
             self.exit_program()
-        else:
-            self.set_all_LEDS_colors(0,0,0,0)
-            self.start_rotating_effect()
-            t0 = time.perf_counter()
-            run_id = self.send_message_to_assistant(self.client, self.thread_id, self.assistant_id, message)
-            response = self.get_assistant_response(self.client, self.thread_id, run_id)
+            return
+
+        # Señales y cronómetro
+        self.set_all_LEDS_colors(0, 0, 0, 0)
+        self._turn_t0 = time.perf_counter()
+        self._first_speak_ts = None
+        self._tts_started = False
+        self.start_rotating_effect()
+
+        t0 = time.perf_counter()
+        try:
+            response_text = self.llm_stream_reply_single_message(message)
             dt = time.perf_counter() - t0
+            print(f"[GPT] Latencia total (stream): {dt:.3f} s")
 
-            print(f"[GPT] Latencia: {dt:.3f} s")
-
-            # print(f"Respuesta del asistente: {response}")
-            # self.actualizar_to_say(response)
-            response_final, last_word = self.split_last_word(response)
-            print(f"Assistant Response: {response_final}")
-            print(f"Last word: {last_word}")
-            self.speech_proxy.say(response_final, False)
+            # NO re-extraer. Usar lo que dejó el stream.
+            emo = getattr(self, "_last_emotion", "") or ""
+            print(f"Assistant Response: {response_text}")
+            print(f"Emotion: {emo or 'N/A'}")
+            if emo:
+                self.set_emotion(emo)
+        finally:
             self.stop_rotating_effect()
-            self.set_emotion(last_word)
-        pass
-
 
     #
     # IMPLEMENTATION of setGameInfo method from GPT interface
@@ -318,67 +539,35 @@ class SpecificWorker(GenericWorker):
     # IMPLEMENTATION of startChat method from GPT interface
     #
     def GPT_startChat(self):
-        self.assistant_id = self.get_assistant_id_by_name(self.asisstantName)
-        if self.assistant_id:
-            print(f"El ID del asistente '{self.asisstantName}' es: {self.assistant_id}")
-        else:
-            print(f"No se encontró un asistente con el nombre '{self.asisstantName}'")
-            sys.exit()  # Termina la ejecución del programa
+        name = self._assistant_name()
+        system_prompt, cfg = self._load_system_prompt_and_params(name)
 
-        ### Creación del hilo de conversación
-        self.thread = self.client.beta.threads.create()
-        self.thread_id = self.thread.id
-        print(f"Thread creado con ID: {self.thread_id}")
+        # Aplica config si existe
+        self.model_full = cfg.get("full_model", self.model_full)
+        self.phase_b_params["temperature"] = cfg.get("temp_b", self.phase_b_params["temperature"])
+        self.phase_b_params["max_tokens"] = cfg.get("max_tokens_b", self.phase_b_params["max_tokens"])
 
-        # Primer mensaje, el cual envia el json y la respuesta es el inicio del juego
-        self.message = self.client.beta.threads.messages.create(
-            thread_id=self.thread_id,
-            role="user",
-            content=self.userInfo,
-        )
+        # Historial con system prompt del asistente
+        self.history = [{"role": "system", "content": system_prompt}]
 
-        ### Ejecución del asistente ###
-        self.run = self.client.beta.threads.runs.create(
-            assistant_id=self.assistant_id,
-            thread_id=self.thread_id
-        )
-        self.run_id = self.run.id
+        initial_prompt = (self.userInfo or "").strip() or "Saluda al usuario y preséntate brevemente."
 
-        # instructions="Para iniciar la conversación solo saluda al usuario y presentate como EBO, el robot mas simpatico del mundo creado en Robolab."
+        # Señales y cronómetro
+        self.set_all_LEDS_colors(0, 0, 0, 0)
+        self._turn_t0 = time.perf_counter()
+        self._first_speak_ts = None
+        self._tts_started = False
+        self.start_rotating_effect()
 
-        ### Ejecución ###
-        self.wait_for_run_completion(client=self.client, thread_id=self.thread_id, run_id=self.run_id)
-
-        ### Ver los logs ###
-        run_steps = self.client.beta.threads.runs.steps.list(
-            thread_id=self.thread_id,
-            run_id=self.run_id
-        )
-
-        pass
-
-    def send_message_to_assistant(self, client, thread_id, assistant_id, user_message):
-        # Enviar el mensaje del usuario al asistente
-        client.beta.threads.messages.create(
-            thread_id=thread_id,
-            role="user",
-            content=user_message
-        )
-
-        # Ejecutar el asistente con instrucciones (si se proporcionan)
-        # run = client.beta.threads.runs.create(
-        #     thread_id=thread_id,
-        #     assistant_id=assistant_id,
-        #     instructions="Continua la conversación como tú sabes"
-        # )
-        run = client.beta.threads.runs.create(
-            thread_id=thread_id,
-            assistant_id=assistant_id      ###### AQUI SE PUEDEN AÑADIR MAS INSTRUCTIONS
-        )
-        run_id = run.id
-        print(f"Mensaje enviado. Run ID: {run_id}")
-        return run_id
-
+        try:
+            response_text = self.llm_stream_reply_single_message(initial_prompt)
+            emo = getattr(self, "_last_emotion", "") or ""
+            print(f"Assistant Response: {response_text}")
+            print(f"Emotion: {emo or 'N/A'}")
+            if emo:
+                self.set_emotion(emo)
+        finally:
+            self.stop_rotating_effect()
 
     def actualizar_dsr(self, aficiones, familiares):
         node = self.g.get_node("CSV Manager")
@@ -399,37 +588,46 @@ class SpecificWorker(GenericWorker):
         game = node.attrs["actual_game"].value
 
         if game == "Conversation":
-            message = """La conversación ha terminado. Actualiza los datos iniciales del usuario proporcionados según la conversación. Devuelvemelo en formato:
-            Aficiones: (texto).
-            Familiares: (texto)"""
-            run_id = self.send_message_to_assistant(self.client, self.thread_id, self.assistant_id, message)
-            response = self.get_assistant_response(self.client, self.thread_id, run_id)
+            # Pide al LLM que extraiga Aficiones y Familiares a partir del historial
+            prompt_usuario = (
+                "La conversación ha terminado. A partir del historial, actualiza los datos. Si tenía aficiones previas o familiares pero no se habló de ellos incluyelos nuevamente. "
+                "iniciales del usuario proporcionados según la conversación. Devuélvelo EXACTAMENTE "
+                "en este formato (una línea por campo):\n"
+                "Aficiones: ...\n"
+                "Familiares: ..."
+            )
 
-            aficiones_pattern = r"Aficiones:\s*(.*)"
-            familiares_pattern = r"Familiares:\s*(.*)"
+            # Monta entrada con system prompt + historial + la instrucción final
+            inputs = [
+                *self.history,
+                {"role": "user", "content": prompt_usuario},
+            ]
 
-            aficiones_match = re.search(aficiones_pattern, response)
-            familiares_match = re.search(familiares_pattern, response)
+            r = self.client.responses.create(
+                model=self.model_full,
+                input=inputs,
+                temperature=0.0,
+                max_output_tokens=200,
+            )
+            response = r.output_text.strip()
 
-            aficiones = aficiones_match.group(1) if aficiones_match else ""
-            familiares = familiares_match.group(1) if familiares_match else ""
+            # Extrae campos con regex (como ya hacías)
+            aficiones_match = re.search(r"Aficiones:\s*(.*)", response)
+            familiares_match = re.search(r"Familiares:\s*(.*)", response)
+            aficiones = aficiones_match.group(1).strip() if aficiones_match else ""
+            familiares = familiares_match.group(1).strip() if familiares_match else ""
 
             self.actualizar_dsr(aficiones, familiares)
-
-
         else:
             self.actualizar_dsr2(game)
 
         node.attrs["actual_game"].value = ""
         self.g.update_node(node)
 
-
     def exit_program(self):
         self.exit_mode()
         time.sleep(0.5)
         print("-------------------- El programa ha terminado --------------------")
-        self.delete_thread(thread_id=self.thread_id)
-        print("-------------------- Hilo borrado --------------------")
         self.conversacion_en_curso = False
         self.actualizar_csv()
 
@@ -438,38 +636,6 @@ class SpecificWorker(GenericWorker):
         node.attrs["actualizar_info"].value = True
         self.g.update_node(node)
 
-    def delete_thread(self, thread_id):
-        self.client.beta.threads.delete(thread_id)
-        print(f"El hilo con ID: {thread_id} ha sido eliminado.")
-
-    def get_assistant_response(self, client, thread_id, run_id):
-        # Esperar hasta que el asistente termine de procesar la respuesta
-        print("Esperando la respuesta del asistente...")
-        while True:
-            run = client.beta.threads.runs.retrieve(
-                thread_id=thread_id,
-                run_id=run_id
-            )
-            if run.status == "completed":
-                break
-            time.sleep(1)
-
-        # Recuperar los mensajes del asistente
-        messages = client.beta.threads.messages.list(thread_id=thread_id)
-
-        # Filtrar el mensaje del asistente
-        assistant_messages = [
-            message
-            for message in messages.data
-            if message.role == "assistant" and message.run_id == run_id
-        ]
-
-        if assistant_messages:
-            # Extraer y devolver la respuesta
-            assistant_response = assistant_messages[0].content[0].text.value
-            return assistant_response
-        else:
-            return "No se recibió respuesta del asistente."
     # ===================================================================
     # ===================================================================
 

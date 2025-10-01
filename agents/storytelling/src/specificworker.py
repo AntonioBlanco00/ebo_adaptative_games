@@ -352,16 +352,34 @@ class SpecificWorker(GenericWorker):
             self.user_info = self.archivo_json_a_string(self.archivo_path)
             self.story_selected_dsr(juego)
         else:
-            self.user_info = f"Conversación con {self.nombre_jugador}"
+            if manual:
+                self.user_info = f"Conversación con {self.nombre_jugador}"
+
             self.story_selected_dsr("Conversation")
 
         self.cerrar_ui(3 if tipo == "story" else 2)
 
-        self.gpt_proxy.setGameInfo("StoryTelling" if tipo == "story" else "Conversation", self.user_info)
+        assistant_name = "StoryTelling" if tipo == "story" else self._get_selected_personality()
+        print(f"[START] assistantName={assistant_name} | tipo={tipo}")
+        self.gpt_proxy.setGameInfo(assistant_name, self.user_info)
         self.lanzar_ui4()
         self.ui4.text_info.setText("EBO comenzará a hablar en breve")
         self.gpt_proxy.startChat()
         self.ui4.text_info.setText("Introduzca respuesta")
+
+    def _get_selected_personality(self) -> str:
+        """Devuelve la personalidad elegida en la UI conversacional.
+        Fallback seguro a 'EBO_simpatico' si no hay selección."""
+        if not hasattr(self, "ui2") or not hasattr(self.ui2, "comboBox"):
+            print("[UI] comboBox de personalidad NO encontrado; usando 'EBO_simpatico'")
+            return "EBO_simpatico"
+
+        val = self.ui2.comboBox.currentText().strip()
+        if not val or "Seleccionar Personalidad" in val:
+            print("[UI] Personalidad no seleccionada; usando 'EBO_simpatico'")
+            return "EBO_simpatico"
+
+        return val  # p. ej. 'EBO_simpatico', 'EBO_neutro', 'EBO_pasional'
 
     def conversation_clicked(self):
         print("Conversación Seleccionada")
