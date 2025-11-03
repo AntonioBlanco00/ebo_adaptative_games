@@ -47,8 +47,10 @@ class GenericWorker(QtWidgets.QWidget):
     def __init__(self, mprx):
         super(GenericWorker, self).__init__()
 
+        self.eboasr_proxy = mprx["EboASRProxy"]
         self.gpt_proxy = mprx["GPTProxy"]
         self.gestorsg_proxy = mprx["GestorSGProxy"]
+        self.speech_proxy = mprx["SpeechProxy"]
 
         self.ui = Ui_guiDlg()
         self.ui.setupUi(self)

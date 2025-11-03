@@ -5,6 +5,8 @@ StoryTelling.Endpoints=tcp -p 16758
 # Proxies for required interfaces
 GPTProxy = gpt:tcp -h localhost -p 11315
 GestorSGProxy = gestorsg:tcp -h localhost -p 16299
+SpeechProxy = speech:tcp -h 192.168.5.25 -p 11339
+EboASRProxy = eboasr:tcp -h 192.168.5.25 -p 13455
 
 
 

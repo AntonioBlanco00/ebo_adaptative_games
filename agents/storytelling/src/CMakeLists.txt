@@ -3,4 +3,4 @@ PROJECT(  storytelling )
 
 INCLUDE( /home/robocomp/robocomp/cmake/robocomp.cmake )
 
-ROBOCOMP_IDSL_TO_ICE( CommonBehavior GPT GestorSG StoryTelling )
+ROBOCOMP_IDSL_TO_ICE( CommonBehavior EboASR GPT GestorSG Speech StoryTelling )

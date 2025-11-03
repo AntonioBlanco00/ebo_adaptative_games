@@ -5,10 +5,14 @@ from rich.console import Console, Text
 console = Console()
 
 
+Ice.loadSlice("-I ./src/ --all ./src/EboASR.ice")
+import RoboCompEboASR
 Ice.loadSlice("-I ./src/ --all ./src/GPT.ice")
 import RoboCompGPT
 Ice.loadSlice("-I ./src/ --all ./src/GestorSG.ice")
 import RoboCompGestorSG
+Ice.loadSlice("-I ./src/ --all ./src/Speech.ice")
+import RoboCompSpeech
 Ice.loadSlice("-I ./src/ --all ./src/StoryTelling.ice")
 import RoboCompStoryTelling
 
@@ -53,9 +57,13 @@ class Requires:
         self.ice_connector = ice_connector
         self.mprx={}
 
+        self.EboASR = self.create_proxy("EboASRProxy", RoboCompEboASR.EboASRPrx)
+
         self.GPT = self.create_proxy("GPTProxy", RoboCompGPT.GPTPrx)
 
         self.GestorSG = self.create_proxy("GestorSGProxy", RoboCompGestorSG.GestorSGPrx)
+
+        self.Speech = self.create_proxy("SpeechProxy", RoboCompSpeech.SpeechPrx)
 
     def get_proxies_map(self):
         return self.mprx

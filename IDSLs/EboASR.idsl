@@ -1,0 +1,8 @@
+module RoboCompEboASR
+{
+  interface EboASR
+  {
+    string listenandtranscript();
+    void stopListening();
+  };
+};
